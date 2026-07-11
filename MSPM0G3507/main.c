@@ -31,7 +31,7 @@
  */
 
 #include "ti_msp_dl_config.h"
-#include "delay.h"
+#include "User/delay.h"
 #include "oled.h"
 #include "uart.h"
 #include "motor.h"

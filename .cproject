@@ -95,6 +95,19 @@
                             </tool>
                         </toolChain>
                     </folderInfo>
+                    <fileInfo id="com.ti.ccstudio.buildDefinitions.TMS470.Debug.1002299303.MSPM0G3507/main.c" name="main.c" rcbsApplicability="disable" resourcePath="MSPM0G3507/main.c" toolsToInvoke="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_5.1.exe.compilerDebug.1749131011.1949941263">
+                        <tool id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_5.1.exe.compilerDebug.1749131011.1949941263" name="Arm Compiler" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_5.1.exe.compilerDebug.1749131011">
+                            <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_5.1.compilerID.INCLUDE_PATH.575442203" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_5.1.compilerID.INCLUDE_PATH" valueType="includePath">
+                                <listOptionValue value="${COM_TI_MSPM0_SDK_INCLUDE_PATH}"/>
+                                <listOptionValue value="${SYSCONFIG_TOOL_INCLUDE_PATH}"/>
+                                <listOptionValue value="${PROJECT_ROOT}/User"/>
+                                <listOptionValue value="${PROJECT_ROOT}/${ConfigName}"/>
+                                <listOptionValue value="${COM_TI_MSPM0_SDK_INSTALL_DIR}/source/third_party/CMSIS/Core/Include"/>
+                                <listOptionValue value="${COM_TI_MSPM0_SDK_INSTALL_DIR}/source"/>
+                                <listOptionValue value="${PROJECT_ROOT}/MSPM0G3507/User"/>
+                            </option>
+                        </tool>
+                    </fileInfo>
                 </configuration>
             </storageModule>
             <storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
