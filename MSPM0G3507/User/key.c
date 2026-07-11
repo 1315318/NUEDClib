@@ -6,17 +6,21 @@ uint32_t counter_A = 0;
 
 void GPIOB_IRQHandler(void)
 {
-    switch (DL_GPIO_getPendingInterrupt(GPIOB)) // 注意：GPIOB 必须是宏定义好的端口指针
+    uint32_t pending = DL_GPIO_getPendingInterrupt(GPIOB); // 获取GPIOB的中断挂起状态
+    
+    switch (pending)
     {
-        case Motor_2_E2A_IIDX:
+        case Motor_2_E2A_IIDX: // 判断中断源是否为Motor_2_E2A_IIDX
             counter_B++;
             break;
-        case Motor_l_E1A_IIDX:
+        case Motor_l_E1A_IIDX: // 判断中断源是否为Motor_l_E1A_IIDX 
             counter_A++;
             break;
         default:
-            break; // 建议加上 default
+            break;
     }
+    
+    DL_GPIO_clearInterruptStatus(GPIOB, pending); // 清除GPIOB的中断挂起状态
 }
 
     

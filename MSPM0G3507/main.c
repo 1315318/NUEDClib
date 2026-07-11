@@ -31,7 +31,7 @@
  */
 
 #include "ti_msp_dl_config.h"
-#include "User/delay.h"
+#include "delay.h"
 #include "oled.h"
 #include "uart.h"
 #include "motor.h"
@@ -50,20 +50,17 @@ extern uint8_t trace_data[4];
 int main(void)
 {
     SYSCFG_DL_init();
+    
     NVIC_EnableIRQ(GPIO_MULTIPLE_GPIOB_INT_IRQN);
-    DL_Timer_startCounter(PWMA_INST);
-    DL_Timer_startCounter(PWMB_INST);
-    DL_Timer_setCaptureCompareValue(PWMA_INST, 50, GPIO_PWMA_C0_IDX);
-    DL_Timer_setCaptureCompareValue(PWMB_INST, 50, GPIO_PWMB_C1_IDX);
+    
     motor_init(1);
     motor_init(2);
+    
     target_speed_A = 0;
     target_speed_B = 0;
 
     while (1) {
-        DL_GPIO_clearPins(LED_PORT,LED_LED_TEST_PIN);//输出低电平
-        delay_ms(100);//延时大概1S
-        DL_GPIO_setPins(LED_PORT,LED_LED_TEST_PIN);  //输出高电平
-        delay_ms(100);//延时大概1S
+        trace_get_value();
+        trace_motor();
     }
 }
