@@ -4,9 +4,7 @@
 #define PI 3.14
 
 #include "ti_msp_dl_config.h"
-#include "key.h"
-
-
+#include "trace.h"
 
 void motor_init(uint8_t motor_id);
 void motor_set_duty(uint8_t motor_id, uint32_t duty);
