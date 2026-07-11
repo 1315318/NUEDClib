@@ -61,16 +61,11 @@ int main(void)
     target_speed_B = 0;
 
     while (1) {
-        // DL_GPIO_setPins(Motor_2_PORT, Motor_2_BIN2_PIN);
-        // DL_GPIO_clearPins(Motor_2_PORT, Motor_2_BIN1_PIN);
-        // DL_GPIO_setPins(Motor_l_AIN2_PORT, Motor_l_AIN2_PIN);
-        // DL_GPIO_clearPins(Motor_l_AIN1_PORT, Motor_l_AIN1_PIN);
-        // motor_set_duty(1,2000);
-        // motor_set_duty(2,2000);
-        DL_GPIO_clearPins(LED_PORT,LED_LED_TEST_PIN);//输出低电平
-        delay_ms(100);//延时大概1S
-        DL_GPIO_setPins(LED_PORT,LED_LED_TEST_PIN);  //输出高电平
-        delay_ms(100);//延时大概1S
-
+        DL_GPIO_setPins(Motor_2_PORT, Motor_2_BIN2_PIN);
+        DL_GPIO_clearPins(Motor_2_PORT, Motor_2_BIN1_PIN);
+        DL_GPIO_setPins(Motor_l_AIN2_PORT, Motor_l_AIN2_PIN);
+        DL_GPIO_clearPins(Motor_l_AIN1_PORT, Motor_l_AIN1_PIN);
+        motor_set_duty(1,2000);
+        motor_set_duty(2,2000);
     }
 }
