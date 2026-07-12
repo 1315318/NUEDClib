@@ -1,66 +1,53 @@
-/*
- * Copyright (c) 2021, Texas Instruments Incorporated
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * *  Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * *  Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * *  Neither the name of Texas Instruments Incorporated nor the names of
- *    its contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 #include "ti_msp_dl_config.h"
 #include "delay.h"
 #include "oled.h"
-#include "uart.h"
 #include "motor.h"
 #include <stdio.h>
 #include "key.h"
 #include "trace.h"
 
 
-
-
 int status = 0;
 extern float target_speed_A;
 extern float target_speed_B;
-extern uint8_t trace_data[4];  
+extern uint8_t trace_data[4];
+
+static const char *reset_name(uint32_t cause) {
+    switch (cause) {
+    case 0x04: return "!! BOR !!";
+    case 0x02: return "POR NRST";
+    case 0x09: return "Boot NRST";
+    case 0x00: return "No Reset";
+    default:   return "Other";
+    }
+}
 
 int main(void)
 {
     SYSCFG_DL_init();
-    
-    NVIC_EnableIRQ(GPIO_MULTIPLE_GPIOB_INT_IRQN);
-    
+
+    OLED_Init();
+    OLED_Clear();
+
+    uint32_t cause = (uint32_t)DL_SYSCTL_getResetCause();
+
+    char buf[20];
+    sprintf(buf, "RST:%s", reset_name(cause));
+    OLED_ShowString(0, 0, (u8 *)buf, 16);
+    OLED_ShowString(0, 24, (u8 *)"Wait 3s...", 16);
+    OLED_Refresh();
+    delay_ms(3000);
+
+    /* OLED 仅启动时用，进主循环后不再碰 I2C，防止电机噪声卡死 */
+    /* 编码器中断暂不开启，后续通过 QEI 硬件模式接入 */
+
     motor_init(1);
     motor_init(2);
-    
+
     target_speed_A = 0;
     target_speed_B = 0;
 
     while (1) {
-        trace_get_value();
         trace_motor();
     }
 }

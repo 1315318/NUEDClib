@@ -1,18 +1,21 @@
 #ifndef MOTOR_H
 #define MOTOR_H
 
-#define PI 3.14
+#define PI 3.1415926f
 
 #include "ti_msp_dl_config.h"
-#include "trace.h"
+
+/* ── Motor hardware parameters ── */
+#define MOTOR_BIANMAQI   260     /* encoder pulses per revolution */
+#define MOTOR_WHEEL_D     44     /* wheel diameter, mm */
+
+/* ── PWM duty limits ── */
+#define PWM_PERIOD      4000     /* timer count period */
+#define PWM_DUTY_MAX    4000
 
 void motor_init(uint8_t motor_id);
 void motor_set_duty(uint8_t motor_id, uint32_t duty);
 void motor_set_direction(uint8_t motor_id, uint8_t direction);
-
-//编码器线数
-#define MOTOR_BIANMAQI 260
-//轮胎直径
-#define MOTOR_WHEEL_D 44
+void calculate_speed(uint8_t motor_id);
 
 #endif /* MOTOR_H */

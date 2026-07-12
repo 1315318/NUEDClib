@@ -13,7 +13,6 @@ const GPIO   = scripting.addModule("/ti/driverlib/GPIO", {}, false);
 const GPIO1  = GPIO.addInstance();
 const GPIO2  = GPIO.addInstance();
 const GPIO3  = GPIO.addInstance();
-const GPIO4  = GPIO.addInstance();
 const I2C    = scripting.addModule("/ti/driverlib/I2C", {}, false);
 const I2C1   = I2C.addInstance();
 const PWM    = scripting.addModule("/ti/driverlib/PWM", {}, false);
@@ -22,6 +21,7 @@ const PWM2   = PWM.addInstance();
 const SYSCTL = scripting.addModule("/ti/driverlib/SYSCTL");
 const TIMER  = scripting.addModule("/ti/driverlib/TIMER", {}, false);
 const TIMER1 = TIMER.addInstance();
+const TIMER2 = TIMER.addInstance();
 const UART   = scripting.addModule("/ti/driverlib/UART", {}, false);
 const UART1  = UART.addInstance();
 
@@ -48,41 +48,21 @@ pinFunction4.inputFreq   = 40;
 pinFunction4.enable      = true;
 pinFunction4.HFXTStartup = 10;
 
-GPIO1.$name                              = "Motor_l";
-GPIO1.associatedPins.create(4);
-GPIO1.associatedPins[0].$name            = "AIN1";
-GPIO1.associatedPins[0].pin.$assign      = "PA13";
-GPIO1.associatedPins[1].$name            = "AIN2";
-GPIO1.associatedPins[1].pin.$assign      = "PB26";
-GPIO1.associatedPins[2].$name            = "E1A";
-GPIO1.associatedPins[2].direction        = "INPUT";
-GPIO1.associatedPins[2].interruptEn      = true;
-GPIO1.associatedPins[2].polarity         = "RISE";
-GPIO1.associatedPins[2].internalResistor = "PULL_DOWN";
-GPIO1.associatedPins[2].pin.$assign      = "PB23";
-GPIO1.associatedPins[3].$name            = "E1B";
-GPIO1.associatedPins[3].direction        = "INPUT";
-GPIO1.associatedPins[3].internalResistor = "PULL_DOWN";
-GPIO1.associatedPins[3].pin.$assign      = "PB12";
+GPIO1.$name                         = "Motor_l";
+GPIO1.associatedPins.create(2);
+GPIO1.associatedPins[0].$name       = "AIN1";
+GPIO1.associatedPins[0].pin.$assign = "PA13";
+GPIO1.associatedPins[1].$name       = "AIN2";
+GPIO1.associatedPins[1].pin.$assign = "PB26";
 
 const Board = scripting.addModule("/ti/driverlib/Board", {}, false);
 
-GPIO2.$name                              = "Motor_2";
-GPIO2.associatedPins.create(4);
-GPIO2.associatedPins[0].$name            = "BIN1";
-GPIO2.associatedPins[0].pin.$assign      = "PB9";
-GPIO2.associatedPins[1].$name            = "BIN2";
-GPIO2.associatedPins[1].pin.$assign      = "PB7";
-GPIO2.associatedPins[2].$name            = "E2A";
-GPIO2.associatedPins[2].direction        = "INPUT";
-GPIO2.associatedPins[2].internalResistor = "PULL_DOWN";
-GPIO2.associatedPins[2].interruptEn      = true;
-GPIO2.associatedPins[2].polarity         = "RISE";
-GPIO2.associatedPins[2].pin.$assign      = "PB4";
-GPIO2.associatedPins[3].$name            = "E2B";
-GPIO2.associatedPins[3].direction        = "INPUT";
-GPIO2.associatedPins[3].internalResistor = "PULL_DOWN";
-GPIO2.associatedPins[3].pin.$assign      = "PB5";
+GPIO2.$name                         = "Motor_2";
+GPIO2.associatedPins.create(2);
+GPIO2.associatedPins[0].$name       = "BIN1";
+GPIO2.associatedPins[0].pin.$assign = "PB9";
+GPIO2.associatedPins[1].$name       = "BIN2";
+GPIO2.associatedPins[1].pin.$assign = "PB7";
 
 GPIO3.$name                         = "TRACE";
 GPIO3.associatedPins.create(4);
@@ -98,11 +78,6 @@ GPIO3.associatedPins[2].pin.$assign = "PA12";
 GPIO3.associatedPins[3].$name       = "X4";
 GPIO3.associatedPins[3].direction   = "INPUT";
 GPIO3.associatedPins[3].pin.$assign = "PB8";
-
-GPIO4.$name                              = "LED";
-GPIO4.associatedPins[0].$name            = "LED_TEST";
-GPIO4.associatedPins[0].internalResistor = "PULL_DOWN";
-GPIO4.associatedPins[0].pin.$assign      = "PB22";
 
 I2C1.$name                             = "OLED";
 I2C1.basicEnableController             = true;
@@ -167,8 +142,11 @@ TIMER1.interrupts         = ["LOAD"];
 TIMER1.timerPeriod        = "10ms";
 TIMER1.peripheral.$assign = "TIMA1";
 
+TIMER2.$name              = "Motor_Encoder";
+TIMER2.peripheral.$assign = "TIMG8";
+
 UART1.$name                    = "UART_0";
-UART1.targetBaudRate           = 11520;
+UART1.targetBaudRate           = 115200;
 UART1.enabledInterrupts        = ["RX"];
 UART1.peripheral.rxPin.$assign = "PA11";
 UART1.peripheral.txPin.$assign = "PA10";
