@@ -56,10 +56,10 @@ void trace_motor()
     /* ── Count active sensors and compute position error ── */
     uint8_t  active = trace_data[0] + trace_data[1] + trace_data[2] + trace_data[3];
     int8_t   error  = 0;
-    if (trace_data[0]) error += -3;
+    if (trace_data[0]) error += -5;
     if (trace_data[1]) error += -1;
     if (trace_data[2]) error += +1;
-    if (trace_data[3]) error += +3;
+    if (trace_data[3]) error += +5;
 
     /* ── Lost line (1, 1, 1, 1): go straight to find the line again ── */
     if (active == 4)

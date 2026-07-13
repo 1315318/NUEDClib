@@ -44,7 +44,8 @@ int main(void)
     target_speed_A = 0;
     target_speed_B = 0;
 
-    while (1) {
+    while (1) 
+    {
         trace_motor();
     }
 }
