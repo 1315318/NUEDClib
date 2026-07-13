@@ -3,8 +3,8 @@
 #include "oled.h"
 #include "motor.h"
 #include <stdio.h>
-#include "key.h"
 #include "trace.h"
+
 
 
 int status = 0;
@@ -34,9 +34,7 @@ int main(void)
     char buf[20];
     sprintf(buf, "RST:%s", reset_name(cause));
     OLED_ShowString(0, 0, (u8 *)buf, 16);
-    OLED_ShowString(0, 24, (u8 *)"Wait 3s...", 16);
     OLED_Refresh();
-    delay_ms(3000);
 
     /* OLED 仅启动时用，进主循环后不再碰 I2C，防止电机噪声卡死 */
     /* 编码器中断暂不开启，后续通过 QEI 硬件模式接入 */

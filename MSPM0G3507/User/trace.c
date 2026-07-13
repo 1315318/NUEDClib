@@ -22,11 +22,11 @@ uint8_t get_gpio_state(GPIO_Regs *gpio_port, uint32_t gpio)
     uint32_t high_bits = DL_GPIO_readPins(gpio_port, gpio);
     if ((gpio & high_bits) != 0)
     {
-        return 0;   /* HIGH → white background */
+        return 1;   /* HIGH → white background */
     }
     else
     {
-        return 1;   /* LOW  → black line */
+        return 0;   /* LOW  → black line */
     }
 }
 
@@ -61,18 +61,18 @@ void trace_motor()
     if (trace_data[2]) error += +1;
     if (trace_data[3]) error += +3;
 
-    /* ── Lost line (0,0,0,0): go straight to find the line again ── */
-    if (active == 0)
+    /* ── Lost line (1, 1, 1, 1): go straight to find the line again ── */
+    if (active == 4)
     {
         motor_set_direction(1, 1);
         motor_set_direction(2, 1);
-        motor_set_duty(1, DUTY_STRAIGHT);
-        motor_set_duty(2, DUTY_STRAIGHT);
+        motor_set_duty(1, DUTY_STRAIGHT - DUTY_GAIN);
+        motor_set_duty(2, DUTY_STRAIGHT + DUTY_GAIN);
         return;
     }
 
-    /* ── All sensors on line (1,1,1,1): cross / end marker → stop ── */
-    if (active == 4)
+    /* ── All sensors on line (0, 0, 0, 0): cross / end marker → stop ── */
+    if (active == 0)
     {
         motor_set_direction(1, 0);
         motor_set_direction(2, 0);
