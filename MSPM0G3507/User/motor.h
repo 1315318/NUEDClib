@@ -18,4 +18,4 @@ void motor_set_duty(uint8_t motor_id, uint32_t duty);
 void motor_set_direction(uint8_t motor_id, uint8_t direction);
 void calculate_speed(uint8_t motor_id);
 
-#endif /* MOTOR_H */
+#endif 

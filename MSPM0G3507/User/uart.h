@@ -7,4 +7,4 @@
 void UART_send_char(UART_Regs *uart,const uint8_t chr);
 void UART_send_string(UART_Regs *uart, const char *str);
 
-#endif /* UART_H */
+#endif 

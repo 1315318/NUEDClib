@@ -1,24 +1,26 @@
+#include <stdio.h>
+
 #include "ti_msp_dl_config.h"
+
 #include "delay.h"
 #include "oled.h"
 #include "motor.h"
-#include <stdio.h>
 #include "trace.h"
-
-
 
 int status = 0;
 extern float target_speed_A;
 extern float target_speed_B;
 extern uint8_t trace_data[4];
 
-static const char *reset_name(uint32_t cause) {
-    switch (cause) {
-    case 0x04: return "!! BOR !!";
-    case 0x02: return "POR NRST";
-    case 0x09: return "Boot NRST";
-    case 0x00: return "No Reset";
-    default:   return "Other";
+static const char *reset_name(uint32_t cause) 
+{
+    switch (cause) 
+    {
+        case 0x04: return "!! BOR !!";
+        case 0x02: return "POR NRST";
+        case 0x09: return "Boot NRST";
+        case 0x00: return "No Reset";
+        default:   return "Other";
     }
 }
 
@@ -35,9 +37,6 @@ int main(void)
     sprintf(buf, "RST:%s", reset_name(cause));
     OLED_ShowString(0, 0, (u8 *)buf, 16);
     OLED_Refresh();
-
-    /* OLED 仅启动时用，进主循环后不再碰 I2C，防止电机噪声卡死 */
-    /* 编码器中断暂不开启，后续通过 QEI 硬件模式接入 */
 
     motor_init(1);
     motor_init(2);

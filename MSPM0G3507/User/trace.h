@@ -6,4 +6,4 @@
 void trace_get_value(void);
 void trace_motor(void);
 
-#endif /* TRACE_H */
+#endif 
