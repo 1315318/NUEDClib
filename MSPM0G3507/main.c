@@ -62,15 +62,15 @@ int main(void)
     while (1)
     {
         trace_motor();
-        if (DMP_Read_Data(&pitch, &roll, &yaw) == 0) {
-            sprintf(oled_str,"p:%.2f",pitch);
-            OLED_ShowString(0, 16, (u8 *)oled_str, 16);
-            sprintf(oled_str,"r:%.2f",roll);
-            OLED_ShowString(0, 32, (u8 *)oled_str, 16);
-            sprintf(oled_str,"y:%.2f",yaw);
-            OLED_ShowString(0, 48, (u8 *)oled_str, 16);
-            OLED_Refresh();
-        }
+        // if (DMP_Read_Data(&pitch, &roll, &yaw) == 0) {
+        //     sprintf(oled_str,"p:%.2f",pitch);
+        //     OLED_ShowString(0, 16, (u8 *)oled_str, 16);
+        //     sprintf(oled_str,"r:%.2f",roll);
+        //     OLED_ShowString(0, 32, (u8 *)oled_str, 16);
+        //     sprintf(oled_str,"y:%.2f",yaw);
+        //     OLED_ShowString(0, 48, (u8 *)oled_str, 16);
+        //     OLED_Refresh();
+        //}
         gimbal_motor_set_dir(GIMBAL_MOTOR_L, GIMBAL_MOTOR_DIRECTION_FORWARD);
         gimbal_motor_set_speed(GIMBAL_MOTOR_L, 60);
         gimbal_motor_start(GIMBAL_MOTOR_L);
