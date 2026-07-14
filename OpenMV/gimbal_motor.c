@@ -1,2 +1,153 @@
 #include "gimbal_motor.h"
 
+#include "ti_msp_dl_config.h"
+
+void gimbal_motor_init(uint8_t motor_id)
+{
+    if (motor_id == GIMBAL_MOTOR_L)
+    {
+        DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_L_RST_L_PORT, GIMBAL_MOTOR_GPIO_L_RST_L_PIN);
+        DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_L_SLP_L_PORT, GIMBAL_MOTOR_GPIO_L_SLP_L_PIN);
+        DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_L_DIR_L_PORT, GIMBAL_MOTOR_GPIO_L_DIR_L_PIN);
+        DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_L_DCY_L_PORT, GIMBAL_MOTOR_GPIO_L_DCY_L_PIN);
+        NVIC_EnableIRQ(GIMBAL_MOTOR_PWM_L_INST_INT_IRQN);
+    }
+    if (motor_id == GIMBAL_MOTOR_R)
+    {
+        DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_R_RST_R_PORT, GIMBAL_MOTOR_GPIO_R_RST_R_PIN);
+        DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_R_SLP_R_PORT, GIMBAL_MOTOR_GPIO_R_SLP_R_PIN);
+        DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_R_DIR_R_PORT, GIMBAL_MOTOR_GPIO_R_DIR_R_PIN);
+        DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_R_DCY_R_PORT, GIMBAL_MOTOR_GPIO_R_DCY_R_PIN);
+        NVIC_EnableIRQ(GIMBAL_MOTOR_PWM_R_INST_INT_IRQN);
+    }
+}
+
+void gimbal_motor_set_dir(uint8_t motor_id, uint8_t direction)
+{
+    if (motor_id == GIMBAL_MOTOR_L) 
+    {
+        if (direction == GIMBAL_MOTOR_DIRECTION_FORWARD) 
+        {
+            DL_GPIO_clearPins(GIMBAL_MOTOR_GPIO_L_DIR_L_PORT, GIMBAL_MOTOR_GPIO_L_DIR_L_PIN);
+        } 
+        if (direction == GIMBAL_MOTOR_DIRECTION_REVERSE)
+        {
+            DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_L_DIR_L_PORT, GIMBAL_MOTOR_GPIO_L_DIR_L_PIN);
+        }
+    }
+    if (motor_id == GIMBAL_MOTOR_R) 
+    {
+        if (direction == GIMBAL_MOTOR_DIRECTION_FORWARD) 
+        {
+            DL_GPIO_clearPins(GIMBAL_MOTOR_GPIO_R_DIR_R_PORT, GIMBAL_MOTOR_GPIO_R_DIR_R_PIN);
+        } 
+        if (direction == GIMBAL_MOTOR_DIRECTION_REVERSE)
+        {
+            DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_R_DIR_R_PORT, GIMBAL_MOTOR_GPIO_R_DIR_R_PIN);
+        }
+    }
+}
+
+void gimbal_motor_start(uint8_t motor_id)
+{
+    if (motor_id == GIMBAL_MOTOR_L)
+    {
+        DL_Timer_startCounter(GIMBAL_MOTOR_PWM_L_INST);
+    }
+    if (motor_id == GIMBAL_MOTOR_R)
+    {
+        DL_Timer_startCounter(GIMBAL_MOTOR_PWM_R_INST);
+    }
+}
+
+void gimbal_motor_stop(uint8_t motor_id)
+{
+    if (motor_id == GIMBAL_MOTOR_L)
+    {
+        DL_Timer_stopCounter(GIMBAL_MOTOR_PWM_L_INST);
+    }
+    if (motor_id == GIMBAL_MOTOR_R)
+    {
+        DL_Timer_stopCounter(GIMBAL_MOTOR_PWM_R_INST);
+    }
+}
+
+// 角速度设置 角度/s
+void gimbal_motor_set_speed(uint8_t motor_id, uint8_t speed)
+{
+    // 根据速度设置PWM频率
+    uint32_t frequency = (uint32_t)(speed / 0.05625); // 计算所需的PWM频率
+    frequency = frequency > 0 ? frequency : 1;
+    // float period_sec = 1.0f / frequency;
+    // // 1 / DCC_100_PWM2_INST_CLK_FREQ 
+    // // period_sec / (1 / DCC_100_PWM2_INST_CLK_FREQ);
+    
+    if (motor_id == GIMBAL_MOTOR_L) 
+    {
+        // 计算定时器溢出值
+        uint32_t period = GIMBAL_MOTOR_PWM_L_INST_CLK_FREQ / frequency;
+        period = period < 65536 ? period : 65535;
+        period = period > 800 ? period : 800; 
+        DL_Timer_setLoadValue(GIMBAL_MOTOR_PWM_L_INST, period);
+        DL_Timer_setCaptureCompareValue(GIMBAL_MOTOR_PWM_L_INST, period / 2, GPIO_GIMBAL_MOTOR_PWM_L_C0_IDX); // 设置占空比为50%
+    }
+    if (motor_id == GIMBAL_MOTOR_R)
+    {
+        // 计算定时器溢出值
+        uint32_t period = GIMBAL_MOTOR_PWM_R_INST_CLK_FREQ / frequency;
+        period = period < 65536 ? period : 65535;
+        period = period > 800 ? period : 800; 
+        DL_Timer_setLoadValue(GIMBAL_MOTOR_PWM_R_INST, period);
+        DL_Timer_setCaptureCompareValue(GIMBAL_MOTOR_PWM_R_INST, period / 2, GPIO_GIMBAL_MOTOR_PWM_R_C0_IDX); // 设置占空比为50%
+    }
+}
+
+uint32_t step_remain_2 = 0;
+
+void gimbal_motor_set_angle(uint8_t motor_id, uint8_t angle)
+{
+    if (motor_id == GIMBAL_MOTOR_L) 
+    {
+        // 根据角度设置步数
+        step_remain_2 = (uint32_t)(angle / 0.05625); // 计算所需的步数
+    }
+    gimbal_motor_start(motor_id);
+}
+
+// void GIMBAL_MOTOR_PWM_L_INST_IRQHandler()
+// {
+//     switch (DL_Timer_getPendingInterrupt(GIMBAL_MOTOR_PWM_L_INST))
+//     {
+//         case DL_TIMER_IIDX_LOAD:
+//         {   
+//             if(step_remain_2 == 0) 
+//             {
+//                 DL_Timer_stopCounter(GIMBAL_MOTOR_PWM_L_INST);
+//                 break;
+//             }
+//             step_remain_2--;
+//             break;
+//         }
+        
+//         default: break;
+//     }
+// }
+
+// void GIMBAL_MOTOR_PWM_R_INST_IRQHandler()
+// {
+//     switch (DL_Timer_getPendingInterrupt(GIMBAL_MOTOR_PWM_R_INST))
+//     {
+//         case DL_TIMER_IIDX_LOAD:
+//         {   
+//             if(step_remain_2 == 0) 
+//             {
+//                 DL_Timer_stopCounter(GIMBAL_MOTOR_PWM_R_INST);
+//                 break;
+//             }
+//             step_remain_2--;
+//             break;
+//         }
+        
+//         default: break;
+//     }
+// }

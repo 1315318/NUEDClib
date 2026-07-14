@@ -7,6 +7,8 @@
 #include "motor.h"
 #include "trace.h"
 
+#include "../OpenMV/gimbal_motor.h"
+
 int status = 0;
 extern float target_speed_A;
 extern float target_speed_B;
@@ -40,6 +42,9 @@ int main(void)
 
     motor_init(1);
     motor_init(2);
+
+    gimbal_motor_init(GIMBAL_MOTOR_L);
+    gimbal_motor_init(GIMBAL_MOTOR_R);
 
     target_speed_A = 0;
     target_speed_B = 0;
