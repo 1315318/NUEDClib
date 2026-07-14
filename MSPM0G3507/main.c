@@ -50,17 +50,6 @@ int main(void)
     OLED_Refresh();
     delay_ms(500);
 
-    int dmp_ret = DMP_Init();
-    sprintf(buf, "DMP:%d", dmp_ret);
-    OLED_ShowString(0, 16, (u8 *)buf, 16);
-    OLED_Refresh();
-    if (dmp_ret != 0) {
-        while (1);
-    }
-
-    float pitch, roll, yaw;
-    char oled_str[20];
-
     motor_init(1);
     motor_init(2);
 
@@ -82,5 +71,14 @@ int main(void)
             OLED_ShowString(0, 48, (u8 *)oled_str, 16);
             OLED_Refresh();
         }
+        gimbal_motor_set_dir(GIMBAL_MOTOR_L, GIMBAL_MOTOR_DIRECTION_FORWARD);
+        gimbal_motor_set_speed(GIMBAL_MOTOR_L, 60);
+        gimbal_motor_start(GIMBAL_MOTOR_L);
+        delay_ms(1000);
+
+        gimbal_motor_set_dir(GIMBAL_MOTOR_R, GIMBAL_MOTOR_DIRECTION_FORWARD);
+        gimbal_motor_set_speed(GIMBAL_MOTOR_R, 60);
+        gimbal_motor_start(GIMBAL_MOTOR_R);
+        delay_ms(1000);
     }
 }
