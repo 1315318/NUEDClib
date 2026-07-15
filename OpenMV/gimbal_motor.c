@@ -2,9 +2,9 @@
 
 #include "ti_msp_dl_config.h"
 
-void gimbal_motor_init(uint8_t motor_id)
+void gimbal_motor_init(uint8_t motor_id) //云台电机初始化
 {
-    if (motor_id == GIMBAL_MOTOR_L)
+    if (motor_id == GIMBAL_MOTOR_L) // 下面的电机
     {
         DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_L_RST_L_PORT, GIMBAL_MOTOR_GPIO_L_RST_L_PIN);
         DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_L_SLP_L_PORT, GIMBAL_MOTOR_GPIO_L_SLP_L_PIN);
@@ -12,7 +12,7 @@ void gimbal_motor_init(uint8_t motor_id)
         DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_L_DCY_L_PORT, GIMBAL_MOTOR_GPIO_L_DCY_L_PIN);
         NVIC_EnableIRQ(GIMBAL_MOTOR_PWM_L_INST_INT_IRQN);
     }
-    if (motor_id == GIMBAL_MOTOR_R)
+    if (motor_id == GIMBAL_MOTOR_R) // 上面的电机
     {
         DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_R_RST_R_PORT, GIMBAL_MOTOR_GPIO_R_RST_R_PIN);
         DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_R_SLP_R_PORT, GIMBAL_MOTOR_GPIO_R_SLP_R_PIN);
@@ -22,9 +22,9 @@ void gimbal_motor_init(uint8_t motor_id)
     }
 }
 
-void gimbal_motor_set_dir(uint8_t motor_id, uint8_t direction)
+void gimbal_motor_set_dir(uint8_t motor_id, uint8_t direction) // 设置方向
 {
-    if (motor_id == GIMBAL_MOTOR_L) 
+    if (motor_id == GIMBAL_MOTOR_L) // 下面的
     {
         if (direction == GIMBAL_MOTOR_DIRECTION_FORWARD) 
         {
@@ -35,7 +35,7 @@ void gimbal_motor_set_dir(uint8_t motor_id, uint8_t direction)
             DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_L_DIR_L_PORT, GIMBAL_MOTOR_GPIO_L_DIR_L_PIN);
         }
     }
-    if (motor_id == GIMBAL_MOTOR_R) 
+    if (motor_id == GIMBAL_MOTOR_R) // 上面的
     {
         if (direction == GIMBAL_MOTOR_DIRECTION_FORWARD) 
         {
@@ -48,19 +48,21 @@ void gimbal_motor_set_dir(uint8_t motor_id, uint8_t direction)
     }
 }
 
-void gimbal_motor_start(uint8_t motor_id)
+void gimbal_motor_start(uint8_t motor_id) // 电机启动
 {
     if (motor_id == GIMBAL_MOTOR_L)
     {
         DL_Timer_startCounter(GIMBAL_MOTOR_PWM_L_INST);
+        NVIC_EnableIRQ(GIMBAL_MOTOR_PWM_L_INST_INT_IRQN);
     }
     if (motor_id == GIMBAL_MOTOR_R)
     {
         DL_Timer_startCounter(GIMBAL_MOTOR_PWM_R_INST);
+        NVIC_EnableIRQ(GIMBAL_MOTOR_PWM_R_INST_INT_IRQN);
     }
 }
 
-void gimbal_motor_stop(uint8_t motor_id)
+void gimbal_motor_stop(uint8_t motor_id) 
 {
     if (motor_id == GIMBAL_MOTOR_L)
     {
@@ -102,52 +104,62 @@ void gimbal_motor_set_speed(uint8_t motor_id, uint8_t speed)
     }
 }
 
+uint32_t step_remain_1 = 0;
 uint32_t step_remain_2 = 0;
 
-void gimbal_motor_set_angle(uint8_t motor_id, uint8_t angle)
+
+void gimbal_motor_set_angle(uint8_t motor_id, uint8_t angle) // 设置要转的度数
 {
     if (motor_id == GIMBAL_MOTOR_L) 
     {
         // 根据角度设置步数
         step_remain_2 = (uint32_t)(angle / 0.05625); // 计算所需的步数
+        gimbal_motor_start(motor_id);
     }
-    gimbal_motor_start(motor_id);
+    
+    if (motor_id == GIMBAL_MOTOR_R) 
+    {
+        // 根据角度设置步数
+        step_remain_1 = (uint32_t)(angle / 0.05625); // 计算所需的步数
+        gimbal_motor_start(motor_id);
+    }
+    
 }
 
-// void GIMBAL_MOTOR_PWM_L_INST_IRQHandler()
-// {
-//     switch (DL_Timer_getPendingInterrupt(GIMBAL_MOTOR_PWM_L_INST))
-//     {
-//         case DL_TIMER_IIDX_LOAD:
-//         {   
-//             if(step_remain_2 == 0) 
-//             {
-//                 DL_Timer_stopCounter(GIMBAL_MOTOR_PWM_L_INST);
-//                 break;
-//             }
-//             step_remain_2--;
-//             break;
-//         }
+void GIMBAL_MOTOR_PWM_L_INST_IRQHandler()
+{
+    switch (DL_Timer_getPendingInterrupt(GIMBAL_MOTOR_PWM_L_INST))
+    {
+        case DL_TIMER_IIDX_LOAD:
+        {   
+            if(step_remain_2 == 0) 
+            {
+                gimbal_motor_stop(GIMBAL_MOTOR_L);
+                break;
+            }
+            step_remain_2--;
+            break;
+        }
         
-//         default: break;
-//     }
-// }
+        default: break;
+    }
+}
 
-// void GIMBAL_MOTOR_PWM_R_INST_IRQHandler()
-// {
-//     switch (DL_Timer_getPendingInterrupt(GIMBAL_MOTOR_PWM_R_INST))
-//     {
-//         case DL_TIMER_IIDX_LOAD:
-//         {   
-//             if(step_remain_2 == 0) 
-//             {
-//                 DL_Timer_stopCounter(GIMBAL_MOTOR_PWM_R_INST);
-//                 break;
-//             }
-//             step_remain_2--;
-//             break;
-//         }
+void GIMBAL_MOTOR_PWM_R_INST_IRQHandler()
+{
+    switch (DL_Timer_getPendingInterrupt(GIMBAL_MOTOR_PWM_R_INST))
+    {
+        case DL_TIMER_IIDX_LOAD:
+        {   
+            if(step_remain_1 == 0) 
+            {
+                gimbal_motor_stop(GIMBAL_MOTOR_R);
+                break;
+            }
+            step_remain_1--;
+            break;
+        }
         
-//         default: break;
-//     }
-// }
+        default: break;
+    }
+}

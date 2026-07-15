@@ -56,6 +56,12 @@ int main(void)
     gimbal_motor_init(GIMBAL_MOTOR_L);
     gimbal_motor_init(GIMBAL_MOTOR_R);
 
+    gimbal_motor_set_dir(GIMBAL_MOTOR_L,GIMBAL_MOTOR_DIRECTION_FORWARD);
+    gimbal_motor_set_dir(GIMBAL_MOTOR_R,GIMBAL_MOTOR_DIRECTION_FORWARD);
+
+    gimbal_motor_start(GIMBAL_MOTOR_L);
+    gimbal_motor_start(GIMBAL_MOTOR_R);
+
     target_speed_A = 0;
     target_speed_B = 0;
 
@@ -71,14 +77,10 @@ int main(void)
         //     OLED_ShowString(0, 48, (u8 *)oled_str, 16);
         //     OLED_Refresh();
         //}
-        gimbal_motor_set_dir(GIMBAL_MOTOR_L, GIMBAL_MOTOR_DIRECTION_FORWARD);
-        gimbal_motor_set_speed(GIMBAL_MOTOR_L, 60);
-        gimbal_motor_start(GIMBAL_MOTOR_L);
-        delay_ms(1000);
-
-        gimbal_motor_set_dir(GIMBAL_MOTOR_R, GIMBAL_MOTOR_DIRECTION_FORWARD);
-        gimbal_motor_set_speed(GIMBAL_MOTOR_R, 60);
-        gimbal_motor_start(GIMBAL_MOTOR_R);
-        delay_ms(1000);
+        gimbal_motor_set_speed(GIMBAL_MOTOR_L,30);
+        gimbal_motor_set_angle(GIMBAL_MOTOR_L,90);
+        gimbal_motor_set_speed(GIMBAL_MOTOR_R,30);
+        gimbal_motor_set_angle(GIMBAL_MOTOR_R,90);
+        delay_ms(5000); 
     }
 }
