@@ -31,6 +31,7 @@ sensor.skip_frames(time=2000)
 
 clock = time.clock()
 
+green = LED("LED_GREEN")
 red = LED("LED_RED")
 red.on()
 
@@ -68,3 +69,5 @@ while True:
         print(f"Sent Num:{byte_sent}")
     else:
         uart.write(data)
+        red.off()
+        green.toggle()

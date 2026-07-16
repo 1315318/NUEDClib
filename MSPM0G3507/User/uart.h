@@ -3,8 +3,9 @@
 
 #include "ti_msp_dl_config.h"
 
-
 void UART_send_char(UART_Regs *uart,const uint8_t chr);
 void UART_send_string(UART_Regs *uart, const char *str);
+void UART_poll_rx(void);
+void UART_analysis(void);
 
 #endif 

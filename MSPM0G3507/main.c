@@ -9,6 +9,7 @@
 #include "mpu_port.h"
 
 #include "../OpenMV/gimbal_motor.h"
+// #include "../OpenMV/vision.h"
 
 int status = 0;
 extern float target_speed_A;
@@ -32,7 +33,8 @@ void _system_post_cinit(void) { }
 void __mpu_init(void) { }
 
 
-void SysTick_Handler(void) {
+void SysTick_Handler(void) 
+{
     sys_tick_ms++;
 }
 
@@ -63,24 +65,10 @@ int main(void)
     gimbal_motor_start(GIMBAL_MOTOR_R);
 
     target_speed_A = 0;
-    target_speed_B = 0;
+    target_speed_B = 0;;
 
     while (1)
     {
         trace_motor();
-        // if (DMP_Read_Data(&pitch, &roll, &yaw) == 0) {
-        //     sprintf(oled_str,"p:%.2f",pitch);
-        //     OLED_ShowString(0, 16, (u8 *)oled_str, 16);
-        //     sprintf(oled_str,"r:%.2f",roll);
-        //     OLED_ShowString(0, 32, (u8 *)oled_str, 16);
-        //     sprintf(oled_str,"y:%.2f",yaw);
-        //     OLED_ShowString(0, 48, (u8 *)oled_str, 16);
-        //     OLED_Refresh();
-        //}
-        gimbal_motor_set_speed(GIMBAL_MOTOR_L,30);
-        gimbal_motor_set_angle(GIMBAL_MOTOR_L,90);
-        gimbal_motor_set_speed(GIMBAL_MOTOR_R,30);
-        gimbal_motor_set_angle(GIMBAL_MOTOR_R,90);
-        delay_ms(5000); 
     }
 }
