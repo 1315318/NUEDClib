@@ -48,9 +48,9 @@ void UART_poll_rx(void)
                     rx_index = 0;
                     rx_buffer[rx_index] = rx_byte;
                     rx_index++;
+                    
+                    rx_state = STATE_DATA_X;
                 }
-                
-                rx_state = STATE_DATA_X;
                 break;
 
             case STATE_DATA_X:
@@ -62,7 +62,7 @@ void UART_poll_rx(void)
 
             case STATE_DATA_Y:
                 rx_buffer[rx_index] = rx_byte;
-                rx_index++
+                rx_index++;
                 
                 rx_state = STATE_TAIL;
                 break;
@@ -71,7 +71,7 @@ void UART_poll_rx(void)
                 if (rx_byte == 0xBB)
                 {
                     rx_buffer[rx_index] = rx_byte;
-                    rx_index++
+                    rx_index++;
                     frame_ready = 1;
                 }
                 
