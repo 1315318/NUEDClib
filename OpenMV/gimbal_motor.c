@@ -104,26 +104,36 @@ void gimbal_motor_set_speed(uint8_t motor_id, uint8_t speed)
     }
 }
 
-uint32_t step_remain_1 = 0;
-uint32_t step_remain_2 = 0;
+uint32_t step_remain_r = 0;
+uint32_t step_remain_l = 0;
+static uint8_t gimbal_continuous_r = 0;
+static uint8_t gimbal_continuous_l = 0;
 
 
 void gimbal_motor_set_angle(uint8_t motor_id, uint8_t angle) // 设置要转的度数
 {
-    if (motor_id == GIMBAL_MOTOR_L) 
+    if (motor_id == GIMBAL_MOTOR_L)
     {
         // 根据角度设置步数
-        step_remain_2 = (uint32_t)(angle / 0.05625); // 计算所需的步数
+        step_remain_l = (uint32_t)(angle / 0.05625); // 计算所需的步数
         gimbal_motor_start(motor_id);
     }
-    
-    if (motor_id == GIMBAL_MOTOR_R) 
+
+    if (motor_id == GIMBAL_MOTOR_R)
     {
         // 根据角度设置步数
-        step_remain_1 = (uint32_t)(angle / 0.05625); // 计算所需的步数
+        step_remain_r = (uint32_t)(angle / 0.05625); // 计算所需的步数
         gimbal_motor_start(motor_id);
     }
-    
+
+}
+
+void gimbal_motor_set_continuous(uint8_t motor_id, uint8_t continuous)
+{
+    if (motor_id == GIMBAL_MOTOR_L)
+        gimbal_continuous_l = continuous;
+    if (motor_id == GIMBAL_MOTOR_R)
+        gimbal_continuous_r = continuous;
 }
 
 void GIMBAL_MOTOR_PWM_L_INST_IRQHandler()
@@ -131,16 +141,19 @@ void GIMBAL_MOTOR_PWM_L_INST_IRQHandler()
     switch (DL_Timer_getPendingInterrupt(GIMBAL_MOTOR_PWM_L_INST))
     {
         case DL_TIMER_IIDX_LOAD:
-        {   
-            if(step_remain_2 == 0) 
+        {
+            // 连续模式下不计数，由调用方通过 gimbal_motor_stop 控制停机
+            if (gimbal_continuous_l) break;
+
+            if (step_remain_l == 0)
             {
                 gimbal_motor_stop(GIMBAL_MOTOR_L);
                 break;
             }
-            step_remain_2--;
+            step_remain_l--;
             break;
         }
-        
+
         default: break;
     }
 }
@@ -150,16 +163,19 @@ void GIMBAL_MOTOR_PWM_R_INST_IRQHandler()
     switch (DL_Timer_getPendingInterrupt(GIMBAL_MOTOR_PWM_R_INST))
     {
         case DL_TIMER_IIDX_LOAD:
-        {   
-            if(step_remain_1 == 0) 
+        {
+            // 连续模式下不计数，由调用方通过 gimbal_motor_stop 控制停机
+            if (gimbal_continuous_r) break;
+
+            if (step_remain_r == 0)
             {
                 gimbal_motor_stop(GIMBAL_MOTOR_R);
                 break;
             }
-            step_remain_1--;
+            step_remain_r--;
             break;
         }
-        
+
         default: break;
     }
 }

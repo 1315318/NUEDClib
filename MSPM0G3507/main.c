@@ -9,7 +9,7 @@
 #include "mpu_port.h"
 
 #include "../OpenMV/gimbal_motor.h"
-// #include "../OpenMV/vision.h"
+#include "../OpenMV/vision.h"
 
 int status = 0;
 extern float target_speed_A;
@@ -55,20 +55,15 @@ int main(void)
     motor_init(1);
     motor_init(2);
 
-    gimbal_motor_init(GIMBAL_MOTOR_L);
-    gimbal_motor_init(GIMBAL_MOTOR_R);
-
-    gimbal_motor_set_dir(GIMBAL_MOTOR_L,GIMBAL_MOTOR_DIRECTION_FORWARD);
-    gimbal_motor_set_dir(GIMBAL_MOTOR_R,GIMBAL_MOTOR_DIRECTION_FORWARD);
-
-    gimbal_motor_start(GIMBAL_MOTOR_L);
-    gimbal_motor_start(GIMBAL_MOTOR_R);
-
     target_speed_A = 0;
     target_speed_B = 0;;
 
+    gimbal_motor_init(GIMBAL_MOTOR_L);
+    gimbal_motor_init(GIMBAL_MOTOR_R);
+
     while (1)
     {
-        trace_motor();
+        // trace_motor();
+        process_deviation();
     }
 }

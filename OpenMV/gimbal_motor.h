@@ -19,6 +19,7 @@ void gimbal_motor_set_dir(uint8_t motor_id, uint8_t direction);
 void gimbal_motor_start(uint8_t motor_id);
 void gimbal_motor_stop(uint8_t motor_id);
 void gimbal_motor_set_speed(uint8_t motor_id, uint8_t speed);
+void gimbal_motor_set_continuous(uint8_t motor_id, uint8_t continuous);
 // void step_motor_step_set(uint8_t step, uint8_t stepper_id);
 void gimbal_motor_set_angle(uint8_t motor_id, uint8_t angle);
 

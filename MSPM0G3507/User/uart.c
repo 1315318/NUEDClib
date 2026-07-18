@@ -69,26 +69,29 @@ void UART_poll_rx(void)
     }
 }
 
-void UART_analysis(void)
+bool UART_get_deviation(int8_t *out)
 {
     UART_poll_rx();
 
-    if (frame_ready) 
+    if (frame_ready)
     {
-        //清除标志
-        frame_ready = 0;  
-            
-        //解析数据，校验帧头帧尾
-        if (rx_index == 3 && rx_buffer[0] == 0xAA && rx_buffer[2] == 0xBB) 
-        {
-            //提取偏差值
-            volatile int8_t deviation = (int8_t)rx_buffer[1];  
+        frame_ready = 0;
 
-            // process_deviation(deviation);
+        bool valid = false;
+
+        // 校验帧格式: 0xAA | int8_t deviation | 0xBB, 共3字节
+        if (rx_index == 3 && rx_buffer[0] == 0xAA && rx_buffer[2] == 0xBB)
+        {
+            *out = (int8_t)rx_buffer[1];
+            valid = true;
         }
-            
-        //重置缓冲区，准备接收下一帧
+
+        // 重置缓冲区，准备接收下一帧
         rx_index = 0;
         rx_state = STATE_IDLE;
+
+        return valid;
     }
+
+    return false;
 }
