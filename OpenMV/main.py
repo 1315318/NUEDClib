@@ -39,7 +39,8 @@ while True:
     clock.tick()
     img = sensor.snapshot()
 
-    centroid_sum = 0
+    centroid_sum_x = 0
+    centroid_sum_y = 0
 
     for area in dete_area:
         blobs = img.find_blobs(thresholds, roi=area[0:4], pixels_threshold=min_pixel, area_threshold=min_area, merge=False)
@@ -53,18 +54,21 @@ while True:
                 img.draw_rectangle(largest_blob.rect())
                 img.draw_cross(largest_blob.cx(), largest_blob.cy())
 
-            centroid_sum += largest_blob.cx() * area[4]
+            centroid_sum_x += largest_blob.cx() * area[4]
+            centroid_sum_y += largest_blob.cy() * area[4]
 
     # Determine center of line
-    center_pos = int(centroid_sum / weight_sum)
-    # compute the offset value
-    offset_val = center_pos - img.width() // 2
+    center_x = int(centroid_sum_x / weight_sum)
+    center_y = int(centroid_sum_y / weight_sum)
+    # compute the offset values
+    offset_x = center_x - img.width() // 2
+    offset_y = center_y - img.height() // 2
 
-    data = struct.pack("<bbb", 0xAA, offset_val, 0xBB)
+    data = struct.pack("<bbbb", 0xAA, offset_x, offset_y, 0xBB)
     if DEBUG:
         byte_sent = uart.write(data)
 
-        print(f"Offset Valuse: {offset_val}")
+        print(f"Offset X: {offset_x}  Y: {offset_y}")
         print(f"FPS: {clock.fps()}")
         print(f"Sent Num:{byte_sent}")
     else:

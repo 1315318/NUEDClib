@@ -9,6 +9,6 @@
 void UART_send_char(UART_Regs *uart, const uint8_t chr);
 void UART_send_string(UART_Regs *uart, const char *str);
 void UART_poll_rx(void);
-bool UART_get_deviation(int8_t *out);
+bool UART_get_deviations(int8_t *out_x, int8_t *out_y);
 
 #endif 
