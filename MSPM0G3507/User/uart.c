@@ -1,5 +1,6 @@
 #include "uart.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "ti_msp_dl_config.h"
@@ -44,28 +45,36 @@ void UART_poll_rx(void)
             case STATE_IDLE:
                 if (rx_byte == 0xAA)
                 {
-                    rx_state = STATE_DATA_X;
                     rx_index = 0;
-                    rx_buffer[rx_index++] = rx_byte;
+                    rx_buffer[rx_index] = rx_byte;
+                    rx_index++;
                 }
+                
+                rx_state = STATE_DATA_X;
                 break;
 
             case STATE_DATA_X:
-                rx_buffer[rx_index++] = rx_byte;
+                rx_buffer[rx_index] = rx_byte;
+                rx_index++;
+                
                 rx_state = STATE_DATA_Y;
                 break;
 
             case STATE_DATA_Y:
-                rx_buffer[rx_index++] = rx_byte;
+                rx_buffer[rx_index] = rx_byte;
+                rx_index++
+                
                 rx_state = STATE_TAIL;
                 break;
 
             case STATE_TAIL:
                 if (rx_byte == 0xBB)
                 {
-                    rx_buffer[rx_index++] = rx_byte;
+                    rx_buffer[rx_index] = rx_byte;
+                    rx_index++
                     frame_ready = 1;
                 }
+                
                 rx_state = STATE_IDLE;
                 break;
         }
