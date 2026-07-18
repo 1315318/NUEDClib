@@ -63,7 +63,7 @@ int main(void)
 
     while (1)
     {
-        // trace_motor();
-        process_deviation();
+        trace_motor();
+        //process_deviation();
     }
 }

@@ -9,7 +9,7 @@ uint8_t trace_data[4] = {0, 0, 0, 0};
 /* ── Duty cycle constants (PWM period = 4000) ── */
 #define DUTY_MAX       4000   /* absolute upper limit */
 #define DUTY_STRAIGHT  1500   /* base straight-line speed */
-#define DUTY_GAIN       220   /* correction gain per error step */
+#define DUTY_GAIN       250   /* correction gain per error step */
 
 /**
  * @brief  Read a single GPIO pin and return 1=line (black), 0=white.
@@ -56,10 +56,10 @@ void trace_motor()
     /* ── Count active sensors and compute position error ── */
     uint8_t  active = trace_data[0] + trace_data[1] + trace_data[2] + trace_data[3];
     int8_t   error  = 0;
-    if (trace_data[0]) error += +5;
-    if (trace_data[1]) error += +1;
-    if (trace_data[2]) error += -1;
-    if (trace_data[3]) error += -5;
+    if (trace_data[0]) error += -1;
+    if (trace_data[1]) error += -4;
+    if (trace_data[2]) error += +1;
+    if (trace_data[3]) error += +4;
 
     /* ── Lost line (1, 1, 1, 1): go straight to find the line again ── */
     if (active == 4)
