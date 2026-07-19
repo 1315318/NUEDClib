@@ -5,10 +5,10 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        OpenMV Cam                              │
-│  main.py                                                        │
+│  main.py / get_regression.py / template_matching.py / ...       │
 │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌─────────────┐ │
 │  │ 传感器    │ → │ 检测算法  │ → │ 偏移计算  │ → │ 帧打包      │ │
-│  │ snapshot  │   │ find_blobs│   │ cx,cy→off │   │ struct.pack │ │
+│  │ snapshot  │   │ find_*   │   │ cx,cy→off │   │ struct.pack │ │
 │  └──────────┘   └──────────┘   └──────────┘   └──────┬──────┘ │
 │                                                       │ UART TX│
 └───────────────────────────────────────────────────────┼────────┘
@@ -78,16 +78,16 @@ QQVGA = 160×120 像素，画面中心 = (80, 60)：
 ### 1.5 data_valid=0 时的约定
 
 - `offset_x` 和 `offset_y` 必须填 `0`（安全默认值）
-- MSPM0 检查 `data_valid==0` 后**忽略** offset 值，使用上一帧有效数据保持位置
-- 持续 `data_valid=0` 超过 `VISION_TIMEOUT_MS`(200ms) 后电机停机
+- MSPM0 收到 `data_valid=0` 后不更新 `last_dev` 和 `last_confidence`，EMA 向 0 自然衰减
+- UART 物理断线时 `last_frame_ms` 停止更新，200ms 后超时停机
 
 ---
 
-## 二、OpenMV 端接口规范 (main.py)
+## 二、OpenMV 端接口规范
 
 ### 2.1 任务脚本必须遵守的约定
 
-每个追踪任务的 `main.py` 必须：
+每个追踪任务的脚本必须：
 
 1. **输出 5 字节帧**：`struct.pack("<BBbbB", 0xAA, status, offset_x, offset_y, 0xBB)`
 2. **正确设置 status 字节**：
@@ -109,9 +109,9 @@ QQVGA = 160×120 像素，画面中心 = (80, 60)：
 ### 2.3 检测算法（可任务自定义）
 
 OpenMV 负责：
-- 选择合适的 `find_blobs` / `find_template` / `find_apriltags` 等
-- 从检测结果中选出**唯一**要追踪的目标（通常取最大 blob）
-- 做基本的有效性过滤（密度、尺寸等）
+- 选择合适的 `find_blobs` / `find_template` / `get_regression` 等
+- 从检测结果中选出**唯一**要追踪的目标（通常取最大 blob / 最佳匹配）
+- 做基本的有效性过滤（密度、尺寸、匹配分数等）
 
 OpenMV **不负责**：
 - 控制算法（那是 MSPM0 的事）
@@ -132,10 +132,12 @@ MSPM0 会根据 confidence 缩放电机速度：conf=3 → 全速, conf=2 → 75
 
 ### 2.5 当前已实现的任务
 
-| 任务 | 文件 | 像素格式 | 阈值 |
-|------|------|---------|------|
-| 循迹（已移走） | `main.py`(旧) | GRAYSCALE | `[(0, 64)]` |
-| 红色颜色追踪（当前） | `main.py` | RGB565 | `[(30, 80, 20, 127, -20, 40)]` |
+| 任务 | 文件 | 像素格式 | 检测算法 | confidence 来源 |
+|------|------|---------|---------|----------------|
+| 红色颜色追踪 | `main.py` | RGB565 | `find_blobs` | blob 占画面比 |
+| 线性回归循迹 | `get_regression.py` | GRAYSCALE | `get_regression` | 回归强度 magnitude |
+| 模板匹配追踪 | `template_matching.py` | GRAYSCALE | `find_template` | 相关系数 score |
+| 灰度 blob 检测 | `find_blobs.py` | GRAYSCALE | `find_blobs` | 未改造 |
 
 ---
 
@@ -145,16 +147,19 @@ MSPM0 会根据 confidence 缩放电机速度：conf=3 → 全速, conf=2 → 75
 
 ```
 MSPM0G3507/
-├── main.c                    # 入口, 调用 process_deviation()
+├── main.c                          # 入口, 调用 process_deviation()
 ├── User/
-│   ├── uart.h / uart.c       # UART 收帧 + 协议解析
-│   ├── trace.h / trace.c     # 红外循迹（独立子系统，当前未使用）
-│   └── motor.h / motor.c     # 驱动轮电机（独立子系统）
+│   ├── uart.h / uart.c             # UART 收帧 + 协议解析
+│   ├── trace.h / trace.c           # 红外循迹（独立子系统，当前未使用）
+│   └── motor.h / motor.c           # 驱动轮电机（独立子系统）
 │
 OpenMV/
-├── vision.h / vision.c       # 云台 P 控制器
-├── gimbal_motor.h / gimbal_motor.c  # 云台步进电机驱动
-└── main.py                   # OpenMV 端任务脚本
+├── vision.h / vision.c             # 云台 P 控制器（EMA + 迟滞死区 + 置信度增益）
+├── gimbal_motor.h / gimbal_motor.c # 云台步进电机驱动
+├── main.py                         # 颜色追踪任务
+├── get_regression.py               # 线性回归循迹任务
+├── template_matching.py            # 模板匹配追踪任务
+└── find_blobs.py                   # 灰度 blob 检测（未改造）
 ```
 
 ### 3.2 UART 层 (uart.h / uart.c)
@@ -162,7 +167,7 @@ OpenMV/
 **公共接口：**
 
 ```c
-// 轮询 UART FIFO 并驱动状态机，通常在 UART_get_deviations 内部调用
+// 轮询 UART FIFO 并驱动状态机，由 UART_get_deviations 内部调用
 void UART_poll_rx(void);
 
 // 尝试获取一帧数据（非阻塞）
@@ -198,7 +203,7 @@ bool UART_get_deviations(uint8_t *out_status, int8_t *out_x, int8_t *out_y);
 // 主循环每轮调用一次。内部完成：
 //   1. 读取 UART 帧
 //   2. 解析 data_valid / confidence
-//   3. EMA 低通滤波
+//   3. EMA 低通滤波（有效帧跟踪测量值，无效帧向 0 衰减）
 //   4. 迟滞死区判断
 //   5. P 控制 + 置信度增益缩放
 //   6. 输出到云台电机
@@ -209,22 +214,22 @@ void process_deviation(void);
 
 ```c
 // ── X 轴 (L 电机, 水平旋转) ──
-#define VISION_KP_X              1     // 比例增益 (speed = KP * |offset|)
-#define VISION_DEAD_ZONE_ENTER_X 3     // 进入死区阈值 (像素)
-#define VISION_DEAD_ZONE_EXIT_X  5     // 退出死区阈值 (像素)
-#define VISION_SPEED_MIN_X       5     // 最小速度 (°/s)
-#define VISION_SPEED_MAX_X       80    // 最大速度 (°/s)
+#define VISION_KP_X               1     // 比例增益 (speed = KP * |offset|)
+#define VISION_DEAD_ZONE_ENTER_X  3     // 进入死区阈值 (像素)
+#define VISION_DEAD_ZONE_EXIT_X   5     // 退出死区阈值 (像素)
+#define VISION_SPEED_MIN_X        5     // 最小速度 (°/s)
+#define VISION_SPEED_MAX_X        80    // 最大速度 (°/s)
 
 // ── Y 轴 (R 电机, 垂直旋转) ──
-#define VISION_KP_Y              1
-#define VISION_DEAD_ZONE_ENTER_Y 3
-#define VISION_DEAD_ZONE_EXIT_Y  5
-#define VISION_SPEED_MIN_Y       5
-#define VISION_SPEED_MAX_Y       80
+#define VISION_KP_Y               1
+#define VISION_DEAD_ZONE_ENTER_Y  3
+#define VISION_DEAD_ZONE_EXIT_Y   5
+#define VISION_SPEED_MIN_Y        5
+#define VISION_SPEED_MAX_Y        80
 
 // ── 共用 ──
-#define VISION_TIMEOUT_MS        200   // 失联超时 (ms)
-#define VISION_EMA_ALPHA_Q8      64    // EMA 系数 Q8: 64/256=0.25
+#define VISION_TIMEOUT_MS         200   // 失联超时 (ms)
+#define VISION_EMA_ALPHA_Q8       64    // EMA 系数 Q8: 64/256=0.25
 ```
 
 **置信度增益表：**
@@ -246,10 +251,10 @@ process_deviation()
   │    │
   │    ├─ 有帧 → 更新 last_frame_ms
   │    │         │
-  │    │         ├─ data_valid=1 → 更新 last_dev, last_confidence, EMA
-  │    │         └─ data_valid=0 → 保持旧值（等超时）
+  │    │         ├─ data_valid=1 → 更新 last_dev, last_confidence, EMA 跟踪测量值
+  │    │         └─ data_valid=0 → EMA 向 0 衰减 (每帧 ×0.75)
   │    │
-  │    └─ 无帧 → 不更新
+  │    └─ 无帧 → 不更新（last_frame_ms 不动 → 200ms 后超时）
   │
   ├─ 超时检查 (sys_tick_ms - last_frame_ms > 200ms)
   │    └─ 超时 → 两轴停机 + EMA 复位 + return
@@ -270,7 +275,26 @@ process_deviation()
        └─ 设置方向 + 写入 PWM
 ```
 
-### 3.4 云台电机层 (gimbal_motor.h / gimbal_motor.c)
+### 3.4 EMA 衰减机制
+
+当 `data_valid=0`（本帧未检测到目标）且 EMA 已初始化时：
+
+```c
+// 用虚拟测量值 0 驱动衰减，每帧乘以 0.75
+ema_x_q8 -= ema_x_q8 >> 2;   // ema = ema * 3/4
+ema_y_q8 -= ema_y_q8 >> 2;
+```
+
+**解决的问题：**
+
+| 场景 | 改前 | 改后 |
+|------|------|------|
+| 单帧噪点误检 | EMA 锁死在非零值，电机永远转 | EMA 4 帧后衰减到 0，电机 130ms 内停机 |
+| 目标短暂消失 | EMA 保持旧值，电机继续转 | EMA 缓慢衰减，恢复后瞬间拉回 |
+| 正常追踪中丢失目标 | 只有靠 UART 断线超时才停 | EMA 约 10 帧 (~330ms) 自然归零停机 |
+| 开机无目标（第一帧误检） | EMA 初始化到误检值 → 锁死 | 第二帧 data_valid=0 → EMA 衰减 → 停机 |
+
+### 3.5 云台电机层 (gimbal_motor.h / gimbal_motor.c)
 
 **公共接口：**
 
@@ -280,22 +304,32 @@ process_deviation()
 #define GIMBAL_MOTOR_DIRECTION_FORWARD  0
 #define GIMBAL_MOTOR_DIRECTION_REVERSE  1
 
-void gimbal_motor_init(uint8_t motor_id);             // 初始化 GPIO + 定时器
-void gimbal_motor_set_dir(uint8_t motor_id, uint8_t direction);  // 设置方向
-void gimbal_motor_set_speed(uint8_t motor_id, uint8_t speed);    // 设置速度 (°/s)
+void gimbal_motor_init(uint8_t motor_id);
+void gimbal_motor_set_dir(uint8_t motor_id, uint8_t direction);
+void gimbal_motor_set_speed(uint8_t motor_id, uint8_t speed);     // 速度 (°/s)
 void gimbal_motor_set_continuous(uint8_t motor_id, uint8_t continuous); // 连续模式
-void gimbal_motor_start(uint8_t motor_id);             // 启动
-void gimbal_motor_stop(uint8_t motor_id);              // 停止
-void gimbal_motor_set_angle(uint8_t motor_id, uint8_t angle);  // 定角度转动
+void gimbal_motor_start(uint8_t motor_id);
+void gimbal_motor_stop(uint8_t motor_id);
+void gimbal_motor_set_angle(uint8_t motor_id, uint8_t angle);     // 定角度转动
 ```
 
-**调用约定：**
+**连续转动模式：**
 
-- 必须先 `_init()` 再使用
-- `process_deviation()` 首次调用时会自动 `_set_continuous(L, 1)` 和 `_set_continuous(R, 1)`
-- 速度换算：`frequency = speed / 0.05625`（每脉冲 0.05625°），PWM 占空比固定 50%
+`vision.c` 启动时调用 `gimbal_motor_set_continuous(L/R, 1)`，设置静态标志位 `gimbal_continuous_l/r = 1`。每次 PWM 脉冲触发 ISR 时：
 
-### 3.5 红外循迹子系统 (trace.h / trace.c)（独立，当前停用）
+```
+ISR → 检查 gimbal_continuous
+        ├─ =1 → break（跳过步数计数，不停机）← 云台用这个
+        └─ =0 → step_remain-- → 到 0 自动停机 ← 角度模式用这个
+```
+
+连续模式下停机完全由应用层控制（`control_axis` 的迟滞死区判断 + `process_deviation` 的超时判断）。
+
+**R 电机方向修正：**
+
+R 电机（垂直轴）的 GPIO 方向逻辑已在 `gimbal_motor_set_dir` 中交换 `setPins` ↔ `clearPins`，以匹配实际物理安装方向。`gimbal_motor.h` 的宏定义未变，上层 `vision.c` 对 FORWARD/REVERSE 的理解保持一致。
+
+### 3.6 红外循迹子系统 (trace.h / trace.c)（独立，当前停用）
 
 ```c
 void trace_get_value(void);   // 读取 4 路红外传感器 → trace_data[4]
@@ -314,8 +348,9 @@ void trace_motor(void);       // 基于质心误差的线跟随控制
 |------|------|------|
 | OpenMV 帧率 | 无硬性要求 | 30fps 左右正常，掉到 10fps 仍可工作 |
 | MSPM0 主循环频率 | 越快越好 | `while(1)` 无延时，`process_deviation()` 非阻塞 |
-| 超时阈值 | 200ms | 超过此时间无有效帧 → 停机 |
+| 超时阈值 | 200ms | 超过此时间无**任何**帧 → 停机 |
 | EMA 平滑窗口 | α=0.25 | 约 4 帧收敛到新值 63%，约 12 帧收敛到 95% |
+| EMA 衰减速度 | α=0.25 向 0 | 约 4 帧衰减 63%，约 10 帧 (~330ms) 进入死区 |
 
 ### 4.2 启动时序
 
@@ -327,18 +362,20 @@ T=2s    OpenMV 开始发送帧
 T=2s+   正常跟踪
 ```
 
-MSPM0 在 OpenMV 发帧之前（前 2 秒）处于超时状态，电机会保持停机。这是安全的。
+MSPM0 在 OpenMV 发帧之前（前 2 秒）处于超时状态，电机会保持停机。
 
 ### 4.3 异常恢复
 
 | 异常 | OpenMV 行为 | MSPM0 行为 | 恢复 |
 |------|-----------|-----------|------|
-| 目标消失 | data_valid=0, offset=0 | 保持 last_dev, 等超时 | 目标重现 → 立即恢复 |
-| 短暂遮挡 | data_valid=0 | 同上 | 同上 |
-| UART 断线 | 无帧发出 | 200ms 后超时停机 | 重连后自动恢复 |
+| 目标消失 | data_valid=0, offset=0 | EMA 向 0 衰减，~330ms 进入死区停机 | 目标重现 → 立即恢复 |
+| 单帧噪点误检 | 下一帧纠正为 data_valid=0 | EMA 短暂跳起 → 4 帧内衰减回 0 | 自动 |
+| 短暂遮挡 | data_valid=0 | EMA 缓慢衰减，恢复后瞬间拉回 | 自动 |
+| UART 断线 | 无帧发出 | last_frame_ms 不动 → 200ms 超时停机 | 重连后自动恢复 |
 | OpenMV 重启 | 2s 后恢复发帧 | 200ms 超时 → 停机 → 恢复后自动跟踪 | 自动 |
 | MSPM0 重启 | 不受影响 | 重新初始化 | 自动 |
-| 全黑/过曝 | data_valid=0 | 保持位置 | 光照恢复 → 自动恢复 |
+| 全黑/过曝 | data_valid=0 | EMA 衰减 → 停机 | 光照恢复 → 自动恢复 |
+| R 电机方向反 | — | GPIO 电平已在 `gimbal_motor_set_dir` 修正 | — |
 
 ---
 
@@ -354,3 +391,15 @@ MSPM0 在 OpenMV 发帧之前（前 2 秒）处于超时状态，电机会保持
 - [ ] 帧打包格式：`struct.pack("<BBbbB", 0xAA, status, offset_x, offset_y, 0xBB)`
 - [ ] 每帧都发送（包括无效帧），保持 MSPM0 侧连接存活
 - [ ] MSPM0 端 **不需要任何修改**
+
+---
+
+## 六、版本历史
+
+| 日期 | 改动 | 涉及文件 |
+|------|------|---------|
+| 2026-07-19 | 初始版本：5 字节协议 + EMA + 迟滞死区 | main.py, uart.c, vision.c |
+| 2026-07-19 | 颜色追踪迁移、confidence 增益缩放 | main.py, vision.c |
+| 2026-07-19 | get_regression.py / template_matching.py 适配协议 | get_regression.py, template_matching.py |
+| 2026-07-19 | EMA data_valid=0 衰减机制 | vision.c |
+| 2026-07-19 | R 电机方向 GPIO 修正 | gimbal_motor.c |
