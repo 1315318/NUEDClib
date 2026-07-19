@@ -37,13 +37,13 @@ void gimbal_motor_set_dir(uint8_t motor_id, uint8_t direction) // 设置方向
     }
     if (motor_id == GIMBAL_MOTOR_R) // 上面的
     {
-        if (direction == GIMBAL_MOTOR_DIRECTION_FORWARD) 
-        {
-            DL_GPIO_clearPins(GIMBAL_MOTOR_GPIO_R_DIR_R_PORT, GIMBAL_MOTOR_GPIO_R_DIR_R_PIN);
-        } 
-        if (direction == GIMBAL_MOTOR_DIRECTION_REVERSE)
+        if (direction == GIMBAL_MOTOR_DIRECTION_FORWARD)
         {
             DL_GPIO_setPins(GIMBAL_MOTOR_GPIO_R_DIR_R_PORT, GIMBAL_MOTOR_GPIO_R_DIR_R_PIN);
+        }
+        if (direction == GIMBAL_MOTOR_DIRECTION_REVERSE)
+        {
+            DL_GPIO_clearPins(GIMBAL_MOTOR_GPIO_R_DIR_R_PORT, GIMBAL_MOTOR_GPIO_R_DIR_R_PIN);
         }
     }
 }

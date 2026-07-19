@@ -24,6 +24,13 @@
 #define VISION_TIMEOUT_MS       200   // 失联超时 (ms)
 #define VISION_EMA_ALPHA_Q8     64    // EMA 系数 Q8: 64/256 = 0.25
 
+// 置信度 → 增益缩放因子 (Q8 定点: 256 = 1.0x)
+static const uint16_t CONF_GAIN_Q8[] = {0, 128, 192, 256};
+//   conf=0: 未使用 (data_valid=0 时不会进入 control_axis)
+//   conf=1: 128/256 = 0.50x  (勉强检测 → 半速谨慎靠近)
+//   conf=2: 192/256 = 0.75x  (基本确定 → 中速跟踪)
+//   conf=3: 256/256 = 1.00x  (高度可信 → 全速锁定)
+
 extern volatile uint32_t sys_tick_ms;
 
 static int8_t   last_dev_x      = 0;
@@ -41,10 +48,14 @@ static bool     ema_init        = false;
 static bool     in_dead_zone_l  = false;
 static bool     in_dead_zone_r  = false;
 
-// 单轴 P 控制（带迟滞死区）
+// 最近一次有效帧的置信度
+static uint8_t  last_confidence = 0;
+
+// 单轴 P 控制（带迟滞死区 + 置信度增益缩放）
 static void control_axis(uint8_t motor_id, int8_t deviation,
                          int kp, int dead_zone_enter, int dead_zone_exit,
-                         int speed_min, int speed_max)
+                         int speed_min, int speed_max,
+                         uint8_t confidence)
 {
     int abs_dev = (deviation < 0) ? -deviation : deviation;
 
@@ -75,6 +86,10 @@ static void control_axis(uint8_t motor_id, int8_t deviation,
     int speed = kp * abs_dev;
     if (speed < speed_min) speed = speed_min;
     if (speed > speed_max) speed = speed_max;
+
+    // 按置信度缩放速度: conf 越高 → 越接近原始 speed
+    speed = (speed * (int)CONF_GAIN_Q8[confidence]) >> 8;
+    if (speed < 1) speed = 1;  // 确保至少能动，否则永远无法靠近目标
 
     if (deviation > 0)
     {
@@ -107,13 +122,15 @@ void process_deviation(void)
         last_frame_ms  = sys_tick_ms;
         frame_received = true;
 
-        // 检查 data_valid 标志 (bit 0)
-        bool data_valid = (frame_status & 0x01) != 0;
+        // 检查 data_valid (bit 0) 和 confidence (bit 1-2)
+        bool data_valid    = (frame_status & 0x01) != 0;
+        uint8_t confidence = (frame_status >> 1) & 0x03;
 
         if (data_valid)
         {
-            last_dev_x = dev_x;
-            last_dev_y = dev_y;
+            last_dev_x      = dev_x;
+            last_dev_y      = dev_y;
+            last_confidence = confidence;
 
             // EMA 低通滤波 (Q8.8 定点, alpha = 64/256 = 0.25)
             if (!ema_init)
@@ -150,9 +167,11 @@ void process_deviation(void)
 
     control_axis(GIMBAL_MOTOR_L, ctrl_x,
                  VISION_KP_X, VISION_DEAD_ZONE_ENTER_X, VISION_DEAD_ZONE_EXIT_X,
-                 VISION_SPEED_MIN_X, VISION_SPEED_MAX_X);
+                 VISION_SPEED_MIN_X, VISION_SPEED_MAX_X,
+                 last_confidence);
 
     control_axis(GIMBAL_MOTOR_R, ctrl_y,
                  VISION_KP_Y, VISION_DEAD_ZONE_ENTER_Y, VISION_DEAD_ZONE_EXIT_Y,
-                 VISION_SPEED_MIN_Y, VISION_SPEED_MAX_Y);
+                 VISION_SPEED_MIN_Y, VISION_SPEED_MAX_Y,
+                 last_confidence);
 }
