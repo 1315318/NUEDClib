@@ -16,7 +16,7 @@ DEBUG = True
 #   A: 20~127  (positive = red, tune lower bound to exclude weak red)
 #   B: -20~40  (near neutral, avoids orange/yellow bias)
 # Tune these values if the target red object is not detected reliably.
-thresholds = [(30, 80, 20, 127, -20, 40)]
+thresholds = [(0, 100, 20, 127, -128, 127)]
 
 # ── Blob filter params ──
 min_pixel = 200       # minimum pixel count

@@ -148,6 +148,12 @@ void process_deviation(void)
                             * ((int32_t)dev_y * 256 - (int32_t)ema_y_q8)) >> 8);
             }
         }
+        else if (ema_init)
+        {
+            // 本帧无效 → 用虚拟测量值 0 驱动 EMA 衰减 (ema -= ema/4)
+            ema_x_q8 -= ema_x_q8 >> 2;
+            ema_y_q8 -= ema_y_q8 >> 2;
+        }
         // data_valid=0 → 不更新 last_dev 和 EMA，保持当前状态
         // 由超时机制最终停机（如果持续无效）
     }
