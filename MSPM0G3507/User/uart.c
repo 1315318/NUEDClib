@@ -18,7 +18,7 @@ void UART_send_string(UART_Regs *uart, const char *str)
     }
 }
 
-#define RX_BUF_SIZE 5
+#define RX_BUF_SIZE 6
 volatile uint8_t rx_buffer[RX_BUF_SIZE];
 volatile uint8_t rx_index = 0;
 volatile uint8_t frame_ready = 0;
@@ -26,6 +26,7 @@ volatile uint8_t frame_ready = 0;
 typedef enum
 {
     STATE_IDLE,   // 等待帧头 0xAA
+    STATE_STATUS, // 接收 status 字节（新增）
     STATE_DATA_X, // 接收 offset_x
     STATE_DATA_Y, // 接收 offset_y
     STATE_TAIL    // 等待帧尾 0xBB
@@ -48,9 +49,16 @@ void UART_poll_rx(void)
                     rx_index = 0;
                     rx_buffer[rx_index] = rx_byte;
                     rx_index++;
-                    
-                    rx_state = STATE_DATA_X;
+
+                    rx_state = STATE_STATUS;
                 }
+                break;
+
+            case STATE_STATUS:
+                rx_buffer[rx_index] = rx_byte;
+                rx_index++;
+
+                rx_state = STATE_DATA_X;
                 break;
 
             case STATE_DATA_X:
@@ -81,7 +89,7 @@ void UART_poll_rx(void)
     }
 }
 
-bool UART_get_deviations(int8_t *out_x, int8_t *out_y)
+bool UART_get_deviations(uint8_t *out_status, int8_t *out_x, int8_t *out_y)
 {
     UART_poll_rx();
 
@@ -91,11 +99,12 @@ bool UART_get_deviations(int8_t *out_x, int8_t *out_y)
 
         bool valid = false;
 
-        // 校验帧格式: 0xAA | int8_t offset_x | int8_t offset_y | 0xBB, 共4字节
-        if (rx_index == 4 && rx_buffer[0] == 0xAA && rx_buffer[3] == 0xBB)
+        // 校验帧格式: 0xAA | status | int8_t offset_x | int8_t offset_y | 0xBB, 共5字节
+        if (rx_index == 5 && rx_buffer[0] == 0xAA && rx_buffer[4] == 0xBB)
         {
-            *out_x = (int8_t)rx_buffer[1];
-            *out_y = (int8_t)rx_buffer[2];
+            *out_status = rx_buffer[1];
+            *out_x      = (int8_t)rx_buffer[2];
+            *out_y      = (int8_t)rx_buffer[3];
             valid = true;
         }
 
