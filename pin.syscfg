@@ -25,6 +25,8 @@ const PWM3    = PWM.addInstance();
 const PWM4    = PWM.addInstance();
 const SYSCTL  = scripting.addModule("/ti/driverlib/SYSCTL");
 const SYSTICK = scripting.addModule("/ti/driverlib/SYSTICK");
+const TIMER   = scripting.addModule("/ti/driverlib/TIMER", {}, false);
+const TIMER1  = TIMER.addInstance();
 const UART    = scripting.addModule("/ti/driverlib/UART", {}, false);
 const UART1   = UART.addInstance();
 
@@ -51,21 +53,43 @@ pinFunction4.inputFreq   = 40;
 pinFunction4.enable      = true;
 pinFunction4.HFXTStartup = 10;
 
-GPIO1.$name                         = "Motor_l";
-GPIO1.associatedPins.create(2);
-GPIO1.associatedPins[0].$name       = "AIN1";
-GPIO1.associatedPins[0].pin.$assign = "PA13";
-GPIO1.associatedPins[1].$name       = "AIN2";
-GPIO1.associatedPins[1].pin.$assign = "PB26";
+GPIO1.$name                              = "Motor_l";
+GPIO1.associatedPins.create(4);
+GPIO1.associatedPins[0].$name            = "AIN1";
+GPIO1.associatedPins[0].pin.$assign      = "PA13";
+GPIO1.associatedPins[1].$name            = "AIN2";
+GPIO1.associatedPins[1].pin.$assign      = "PB26";
+GPIO1.associatedPins[2].$name            = "E1A";
+GPIO1.associatedPins[2].direction        = "INPUT";
+GPIO1.associatedPins[2].internalResistor = "PULL_DOWN";
+GPIO1.associatedPins[2].assignedPort     = "PORTB";
+GPIO1.associatedPins[2].interruptEn      = true;
+GPIO1.associatedPins[2].polarity         = "RISE";
+GPIO1.associatedPins[2].pin.$assign      = "PB23";
+GPIO1.associatedPins[3].direction        = "INPUT";
+GPIO1.associatedPins[3].$name            = "E1B";
+GPIO1.associatedPins[3].internalResistor = "PULL_DOWN";
+GPIO1.associatedPins[3].pin.$assign      = "PB12";
 
 const Board = scripting.addModule("/ti/driverlib/Board", {}, false);
 
-GPIO2.$name                         = "Motor_2";
-GPIO2.associatedPins.create(2);
-GPIO2.associatedPins[0].$name       = "BIN1";
-GPIO2.associatedPins[0].pin.$assign = "PB9";
-GPIO2.associatedPins[1].$name       = "BIN2";
-GPIO2.associatedPins[1].pin.$assign = "PB7";
+GPIO2.$name                              = "Motor_2";
+GPIO2.associatedPins.create(4);
+GPIO2.associatedPins[0].$name            = "BIN1";
+GPIO2.associatedPins[0].pin.$assign      = "PB9";
+GPIO2.associatedPins[1].$name            = "BIN2";
+GPIO2.associatedPins[1].pin.$assign      = "PB7";
+GPIO2.associatedPins[2].$name            = "E2A";
+GPIO2.associatedPins[2].direction        = "INPUT";
+GPIO2.associatedPins[2].internalResistor = "PULL_DOWN";
+GPIO2.associatedPins[2].assignedPort     = "PORTB";
+GPIO2.associatedPins[2].interruptEn      = true;
+GPIO2.associatedPins[2].polarity         = "RISE";
+GPIO2.associatedPins[2].pin.$assign      = "PB4";
+GPIO2.associatedPins[3].$name            = "E2B";
+GPIO2.associatedPins[3].direction        = "INPUT";
+GPIO2.associatedPins[3].internalResistor = "PULL_DOWN";
+GPIO2.associatedPins[3].pin.$assign      = "PB5";
 
 GPIO3.$name                         = "TRACE";
 GPIO3.associatedPins.create(4);
@@ -210,6 +234,13 @@ SYSTICK.periodEnable    = true;
 SYSTICK.period          = 80000;
 SYSTICK.interruptEnable = true;
 SYSTICK.systickEnable   = true;
+
+TIMER1.$name              = "PID";
+TIMER1.timerClkPrescale   = 100;
+TIMER1.timerPeriod        = "10ms";
+TIMER1.interrupts         = ["LOAD"];
+TIMER1.timerMode          = "PERIODIC_UP_DOWN";
+TIMER1.peripheral.$assign = "TIMG0";
 
 UART1.$name                            = "UART0";
 UART1.rxFifoThreshold                  = "DL_UART_RX_FIFO_LEVEL_ONE_ENTRY";

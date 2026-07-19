@@ -21,8 +21,7 @@ void motor_init(uint8_t motor_id)
      * Restore DL_Timer_startCounter + NVIC_EnableIRQ when
      * DC_Motor_PID() and Motor_PID_INST_IRQHandler() are re-enabled.
      */
-    // DL_Timer_startCounter(Motor_PID_INST);
-    // NVIC_EnableIRQ(Motor_PID_INST_INT_IRQN);
+    
 }
 
 /*
@@ -112,92 +111,80 @@ void motor_set_direction(uint8_t motor_id, uint8_t direction)
     }
 }
 
-/* ── Speed tracking (for future PID use) ──
- * Encoder reading currently disabled.
- * When QEI timers are configured in pin.syscfg (TIMG5/TIMG6),
- * replace the dummy implementation below with hardware QEI reads.
- */
+uint16_t PID_T = 10; //ms
 
-float speed_A = 0.0f;
-float speed_B = 0.0f;
+extern uint32_t counter_1_A;
+extern uint32_t counter_2_A;
+
+float speed_1 = 0;
+float speed_2 = 0;
 
 void calculate_speed(uint8_t motor_id)
 {
-    /* TODO: read QEI timer when Encoder_1_INST / Encoder_2_INST are
-     * configured in pin.syscfg as QEI-mode TIMG instances */
-    (void)motor_id;
-}
-
-/* ── PID speed-control variables (used when PID is re-enabled) ── */
-float kp = 7.0f;              /* proportional gain */
-float ki = 0.6f;              /* integral gain */
-float PWM_A_duty   = 0.0f;
-float PWM_B_duty   = 0.0f;
-float target_speed_A = 0.0f;  /* target speed, motor 1 (left)  */
-float target_speed_B = 0.0f;  /* target speed, motor 2 (right) */
-float last_error_A = 0.0f;
-float last_error_B = 0.0f;
-float current_error_A = 0.0f;
-float current_error_B = 0.0f;
-
-/*
- * DC_Motor_PID() and Motor_PID_INST_IRQHandler() are currently
- * disabled (open-loop control).  To restore PID closed-loop speed
- * control, un-comment the two functions below and re-enable the
- * timer + IRQ in motor_init().
- */
-
-#if 0   /* ── PID closed-loop control (disabled) ── */
-
-void DC_Motor_PID(uint8_t motor_id)
-{
-    float error = 0;
+    
     if (motor_id == 1)
     {
-        error = target_speed_A - speed_A;
-        current_error_A = error;
-        PWM_A_duty += kp * (current_error_A - last_error_A)
-                   +  ki *  current_error_A;
-
-        if (PWM_A_duty > (float)PWM_DUTY_MAX) PWM_A_duty = (float)PWM_DUTY_MAX;
-        if (PWM_A_duty < 0.0f)                PWM_A_duty = 0.0f;
-
-        last_error_A = current_error_A;
-        motor_set_duty(motor_id, (uint32_t)PWM_A_duty);
+        speed_1 = (float)counter_1_A / MOTOR_BIANMAQI * PI * MOTOR_WHEEL_D * 1000/PID_T;
+        counter_1_A = 0;
     }
-    else if (motor_id == 2)
+    if (motor_id == 2)
     {
-        error = target_speed_B - speed_B;
-        current_error_B = error;
-        PWM_B_duty += kp * (current_error_B - last_error_B)
-                   +  ki *  current_error_B;
-
-        if (PWM_B_duty > (float)PWM_DUTY_MAX) PWM_B_duty = (float)PWM_DUTY_MAX;
-        if (PWM_B_duty < 0.0f)                PWM_B_duty = 0.0f;
-
-        last_error_B = current_error_B;
-        motor_set_duty(motor_id, (uint32_t)PWM_B_duty);
+        speed_2 = (float)counter_2_A / MOTOR_BIANMAQI * PI * MOTOR_WHEEL_D * 1000/PID_T;
+        counter_2_A = 0;
     }
 }
 
-void Motor_PID_INST_IRQHandler(void)
-{
-    uint32_t pending = DL_Timer_getPendingInterrupt(Motor_PID_INST);
+float kp = 0.5;
+float ki = 0.4;
 
-    switch (pending)
+#define INTEGRAL_MAX  2000.0f
+#define INTEGRAL_MIN -2000.0f
+
+uint16_t PWM_1_duty = 0;
+float target_speed_1 = 0;
+float last_error_1 = 0;
+float current_error_1 = 0;
+
+uint16_t PWM_2_duty = 0;
+float target_speed_2 = 0;
+float last_error_2 = 0;
+float current_error_2 = 0;
+
+void motor_PID(uint8_t motor_id)
+{
+    float error;
+    if (motor_id == 1) {
+        error = target_speed_1 - speed_1;
+        current_error_1= error;
+        PWM_1_duty += (uint16_t)(kp * (current_error_1 - last_error_1) + ki * (current_error_1));
+        last_error_1 = current_error_1;
+        PWM_1_duty = (int32_t)limit_duty(PWM_1_duty);
+        motor_set_duty(motor_id, (uint32_t)PWM_1_duty);
+    }
+    if (motor_id == 2) {
+        error = target_speed_2 - speed_2;
+        current_error_2= error;
+        PWM_2_duty += (uint16_t)(kp * (current_error_2 - last_error_2) + ki * (current_error_2));
+        last_error_2 = current_error_2;
+        PWM_2_duty = (int32_t)limit_duty(PWM_2_duty);
+        motor_set_duty(motor_id, (uint32_t)PWM_2_duty);
+    }
+}
+
+void PID_INST_IRQHandler()
+{
+    switch (DL_Timer_getPendingInterrupt(PID_INST))
     {
     case DL_TIMER_IIDX_LOAD:
+    {
+        trace_motor();
         calculate_speed(1);
-        DC_Motor_PID(1);
+        motor_PID(1);
         calculate_speed(2);
-        DC_Motor_PID(2);
+        motor_PID(2);
         break;
-
+    }
     default:
         break;
     }
-
-    DL_Timer_clearInterruptStatus(Motor_PID_INST, pending);
 }
-
-#endif  /* PID closed-loop control */
