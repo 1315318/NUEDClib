@@ -57,18 +57,18 @@ int main(void)
     motor_init(1);
     motor_init(2);
 
-    DL_Timer_startCounter(PID_INST);
-    NVIC_EnableIRQ(PID_INST_INT_IRQN);
-    NVIC_EnableIRQ(GPIO_MULTIPLE_GPIOB_INT_IRQN);
+    //DL_Timer_startCounter(PID_INST);
+    //NVIC_EnableIRQ(PID_INST_INT_IRQN);
+    //NVIC_EnableIRQ(GPIO_MULTIPLE_GPIOB_INT_IRQN);
     
     motor_set_direction(1, 1);
-    motor_set_duty(1, 1000);
+    motor_set_direction(2, 1);
 
     gimbal_motor_init(GIMBAL_MOTOR_L);
     gimbal_motor_init(GIMBAL_MOTOR_R);
     while (1)
     {
-        // trace_motor();
+        trace_motor();
         process_deviation();
     }
     

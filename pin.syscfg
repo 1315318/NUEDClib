@@ -237,9 +237,9 @@ SYSTICK.systickEnable   = true;
 
 TIMER1.$name              = "PID";
 TIMER1.timerClkPrescale   = 100;
-TIMER1.timerPeriod        = "10ms";
 TIMER1.interrupts         = ["LOAD"];
 TIMER1.timerMode          = "PERIODIC_UP_DOWN";
+TIMER1.timerPeriod        = "20ms";
 TIMER1.peripheral.$assign = "TIMG0";
 
 UART1.$name                            = "UART0";

@@ -111,7 +111,7 @@ void motor_set_direction(uint8_t motor_id, uint8_t direction)
     }
 }
 
-uint16_t PID_T = 10; //ms
+uint16_t PID_T = 20; //ms
 
 extern uint32_t counter_1_A;
 extern uint32_t counter_2_A;

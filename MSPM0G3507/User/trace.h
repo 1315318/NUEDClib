@@ -6,4 +6,8 @@
 void trace_get_value(void);
 void trace_motor(void);
 
+float target_speed_A;
+float target_speed_B;
+
+
 #endif 
