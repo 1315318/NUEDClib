@@ -8,6 +8,7 @@
 #include "trace.h"
 #include "uart.h"
 #include "mpu_port.h"
+#include "interrupt.h"
 #include "key.h"
 
 #include "../OpenMV/gimbal_motor.h"
@@ -60,7 +61,7 @@ int main(void)
     //DL_Timer_startCounter(PID_INST);
     //NVIC_EnableIRQ(PID_INST_INT_IRQN);
     //NVIC_EnableIRQ(GPIO_MULTIPLE_GPIOB_INT_IRQN);
-    
+    //NVIC EnableIRQ(KEY_GPIOA_INT_IRQN );
     motor_set_direction(1, 1);
     motor_set_direction(2, 1);
 

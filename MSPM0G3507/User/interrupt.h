@@ -1,5 +1,5 @@
-#ifndef KEY_H
-#define KEY_H
+#ifndef INTERRUPT_H
+#define INTERRUPT_H
 
 #include "ti_msp_dl_config.h"
 
