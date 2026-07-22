@@ -14,7 +14,7 @@
 #include "../OpenMV/gimbal_motor.h"
 #include "../OpenMV/vision.h"
 
-int status = 0;
+volatile int status = 0;
 extern float target_speed_1;
 extern float target_speed_2;
 extern uint8_t trace_data[4];
@@ -69,10 +69,23 @@ int main(void)
 
     gimbal_motor_init(GIMBAL_MOTOR_L);
     gimbal_motor_init(GIMBAL_MOTOR_R);
+    
     while (1)
-    {
-        trace_motor();
-        process_deviation();
+    {  
+        static uint8_t last_status = 0xFF; 
+        if (last_status != status)
+        {
+        sprintf(buf, "status:%d", status); 
+        OLED_ShowString(0, 0, (u8*)buf, 16); 
+        OLED_Refresh(); 
+        last_status = status;
+        }        
+        if(status == 1)
+        {
+            trace_motor(); 
+        }
+    
+        //process_deviation();
     }
     
 }
