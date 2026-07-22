@@ -53,15 +53,17 @@ int main(void)
     sprintf(buf, "RST:%s", reset_name(cause));
     OLED_ShowString(0, 0, (u8 *)buf, 16);
     OLED_Refresh();
+   
     delay_ms(500);
 
     motor_init(1);
     motor_init(2);
 
-    //DL_Timer_startCounter(PID_INST);
-    //NVIC_EnableIRQ(PID_INST_INT_IRQN);
-    //NVIC_EnableIRQ(GPIO_MULTIPLE_GPIOB_INT_IRQN);
-    //NVIC EnableIRQ(KEY_GPIOA_INT_IRQN );
+    DL_Timer_startCounter(PID_INST);
+    NVIC_EnableIRQ(PID_INST_INT_IRQN);
+    NVIC_EnableIRQ(GPIO_MULTIPLE_GPIOB_INT_IRQN);
+    NVIC EnableIRQ(KEY_GPIOA_INT_IRQN );
+   
     motor_set_direction(1, 1);
     motor_set_direction(2, 1);
 
