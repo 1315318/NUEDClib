@@ -106,8 +106,8 @@ uint8_t trace_data[4] = {0, 0, 0, 0};
 
 /* ── Duty cycle constants (PWM period = 4000) ── */
 #define DUTY_MAX       4000   /* absolute upper limit */
-#define DUTY_STRAIGHT  1100   /* base straight-line speed */
-#define DUTY_GAIN       280 
+#define DUTY_STRAIGHT  1300   /* base straight-line speed */
+#define DUTY_GAIN       300 
 /**
  * @brief  Read a single GPIO pin and return 1=line (black), 0=white.
  * @note   Most IR line-following sensor modules pull the output LOW
@@ -161,8 +161,8 @@ void trace_motor()
     {
         motor_set_direction(1, 1);
         motor_set_direction(2,1);
-        motor_set_duty(1, 800);
-        motor_set_duty(2, 800);
+        motor_set_duty(1, DUTY_STRAIGHT+20);
+        motor_set_duty(2, DUTY_STRAIGHT);
         return;
     }
     /* ── Lost line (1, 1, 1, 1): go straight to find the line again ── */
@@ -170,8 +170,8 @@ void trace_motor()
     {
         motor_set_direction(1, 1);
         motor_set_direction(2, 1);
-        motor_set_duty(1, DUTY_STRAIGHT - 300);
-        motor_set_duty(2, DUTY_STRAIGHT - 300 + 20);
+        motor_set_duty(1, DUTY_STRAIGHT+20);
+        motor_set_duty(2, DUTY_STRAIGHT);
         return;
     }
 
