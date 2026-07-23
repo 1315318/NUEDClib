@@ -35,8 +35,7 @@ static const char *reset_name(uint32_t cause)
 void _system_post_cinit(void) { }
 void __mpu_init(void) { }
 
-
- void SysTick_Handler(void) 
+void SysTick_Handler(void) 
 {
     sys_tick_ms++;
 }
@@ -56,16 +55,16 @@ int main(void)
    
     delay_ms(500);
 
-    motor_init(1);
-    motor_init(2);
+    motor_init(MOTOR_L);
+    motor_init(MOTOR_R);
 
     DL_Timer_startCounter(PID_INST);
     NVIC_EnableIRQ(PID_INST_INT_IRQN);
     NVIC_EnableIRQ(GPIO_MULTIPLE_GPIOB_INT_IRQN);
     NVIC_EnableIRQ(KEY_GPIOA_INT_IRQN );
    
-    motor_set_direction(1, 1);
-    motor_set_direction(2, 1);
+    motor_set_direction(MOTOR_L, MOTOR_FORWARD);
+    motor_set_direction(MOTOR_R, MOTOR_FORWARD);
 
     // gimbal_motor_init(GIMBAL_MOTOR_L);
     // gimbal_motor_init(GIMBAL_MOTOR_R);
