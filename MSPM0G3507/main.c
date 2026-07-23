@@ -11,8 +11,8 @@
 #include "interrupt.h"
 #include "key.h"
 
-#include "../OpenMV/gimbal_motor.h"
-#include "../OpenMV/vision.h"
+#include "../OpenMV/C/gimbal_motor.h"
+#include "../OpenMV/C/vision.h"
 
 volatile int status = 0;
 extern float target_speed_1;
@@ -62,29 +62,31 @@ int main(void)
     DL_Timer_startCounter(PID_INST);
     NVIC_EnableIRQ(PID_INST_INT_IRQN);
     NVIC_EnableIRQ(GPIO_MULTIPLE_GPIOB_INT_IRQN);
-    NVIC EnableIRQ(KEY_GPIOA_INT_IRQN );
+    NVIC_EnableIRQ(KEY_GPIOA_INT_IRQN );
    
     motor_set_direction(1, 1);
     motor_set_direction(2, 1);
 
-    gimbal_motor_init(GIMBAL_MOTOR_L);
-    gimbal_motor_init(GIMBAL_MOTOR_R);
+    // gimbal_motor_init(GIMBAL_MOTOR_L);
+    // gimbal_motor_init(GIMBAL_MOTOR_R);
     
     while (1)
     {  
+        //static变量只在编译时赋值一次
         static uint8_t last_status = 0xFF; 
+        
         if (last_status != status)
         {
-        sprintf(buf, "status:%d", status); 
-        OLED_ShowString(0, 0, (u8*)buf, 16); 
-        OLED_Refresh(); 
-        last_status = status;
+            sprintf(buf, "status:%d", status); 
+            OLED_ShowString(0, 0, (u8*)buf, 16); 
+            OLED_Refresh(); 
+            last_status = status;
         }        
-        if(status == 1)
+        if(status == STATUS_TRACE)
         {
             trace_motor(); 
         }
-    
+
         //process_deviation();
     }
     
