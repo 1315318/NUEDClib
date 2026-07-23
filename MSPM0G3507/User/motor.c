@@ -1,4 +1,12 @@
 #include "motor.h"
+#include "interrupt.h"
+
+/* ── Speed conversion factor (Q8.8) ────────────────────────────────────────
+   speed = counter / MOTOR_BIANMAQI * π * MOTOR_WHEEL_D * 1000 / PID_PERIOD_MS
+         = counter * (π * 44 * 50) / 260
+         ≈ counter * 26.5827
+   Q8.8:  speed_Q8_8 = counter × 26.5827 × 256 ≈ counter × 6805                */
+#define SPEED_FACTOR_Q8_8  6805
 
 void motor_init(uint8_t motor_id)
 {
@@ -17,11 +25,6 @@ void motor_init(uint8_t motor_id)
         DL_GPIO_setPins(Motor_2_PORT, Motor_2_BIN2_PIN);
         DL_TimerA_setCaptureCompareValue(PWMB_INST, 0U, DL_TIMERA_CAPTURE_COMPARE_1_INDEX);
     }
-    /* PID timer and ISR disabled while using open-loop control.
-     * Restore DL_Timer_startCounter + NVIC_EnableIRQ when
-     * DC_Motor_PID() and Motor_PID_INST_IRQHandler() are re-enabled.
-     */
-    
 }
 
 /*
@@ -111,82 +114,28 @@ void motor_set_direction(uint8_t motor_id, uint8_t direction)
     }
 }
 
-uint16_t PID_T = 20; //ms
-
-extern uint32_t counter_1_A;
-extern uint32_t counter_2_A;
-
-float speed_1 = 0;
-float speed_2 = 0;
-
-void calculate_speed(uint8_t motor_id)
+/**
+ * @brief  Read encoder pulse count and reset for next period.
+ * @return Speed in Q8.8 fixed-point (mm/s × 256).
+ * @note   Called once per motor per control cycle from ISR.
+ *         M0+ has no atomic 32-bit read-modify-write — the tiny window
+ *         between read and clear may drop at most 1 encoder pulse
+ *         (~0.05 mm travel), which is acceptable.
+ */
+int32_t motor_read_encoder(uint8_t motor_id)
 {
-    
+    uint32_t count;
+
     if (motor_id == MOTOR_L)
     {
-        speed_1 = (float)counter_1_A / MOTOR_BIANMAQI * PI * MOTOR_WHEEL_D * 1000/PID_T;
+        count = counter_1_A;
         counter_1_A = 0;
     }
-    if (motor_id == MOTOR_R)
+    else  /* MOTOR_R */
     {
-        speed_2 = (float)counter_2_A / MOTOR_BIANMAQI * PI * MOTOR_WHEEL_D * 1000/PID_T;
+        count = counter_2_A;
         counter_2_A = 0;
     }
-}
 
-float kp = 0.5;
-float ki = 0.4;
-
-#define INTEGRAL_MAX  2000.0f
-#define INTEGRAL_MIN -2000.0f
-
-uint16_t PWM_1_duty = 0;
-float target_speed_1 = 0;
-float last_error_1 = 0;
-float current_error_1 = 0;
-
-uint16_t PWM_2_duty = 0;
-float target_speed_2 = 0;
-float last_error_2 = 0;
-float current_error_2 = 0;
-
-void motor_PID(uint8_t motor_id)
-{
-    float error;
-    if (motor_id == MOTOR_L) 
-    {
-        error = target_speed_1 - speed_1;
-        current_error_1= error;
-        PWM_1_duty += (uint16_t)(kp * (current_error_1 - last_error_1) + ki * (current_error_1));
-        last_error_1 = current_error_1;
-        PWM_1_duty = (int32_t)limit_duty(PWM_1_duty);
-        motor_set_duty(motor_id, (uint32_t)PWM_1_duty);
-    }
-    if (motor_id == MOTOR_R) 
-    {
-        error = target_speed_2 - speed_2;
-        current_error_2= error;
-        PWM_2_duty += (uint16_t)(kp * (current_error_2 - last_error_2) + ki * (current_error_2));
-        last_error_2 = current_error_2;
-        PWM_2_duty = (int32_t)limit_duty(PWM_2_duty);
-        motor_set_duty(motor_id, (uint32_t)PWM_2_duty);
-    }
-}
-
-void PID_INST_IRQHandler()
-{
-    switch (DL_Timer_getPendingInterrupt(PID_INST))
-    {
-    case DL_TIMER_IIDX_LOAD:
-    {
-        trace_motor();
-        calculate_speed(MOTOR_L);
-        motor_PID(MOTOR_L);
-        calculate_speed(MOTOR_R);
-        motor_PID(MOTOR_R);
-        break;
-    }
-    default:
-        break;
-    }
+    return (int32_t)(count * SPEED_FACTOR_Q8_8);
 }
