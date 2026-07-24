@@ -2,18 +2,15 @@
 #define CONTROL_H
 
 #include <stdint.h>
-#include <stdbool.h>
-
-/* ── Control mode ── */
-typedef enum {
-    CONTROL_OPEN_LOOP   = 0,
-    CONTROL_CLOSED_LOOP = 1
-} control_mode_t;
 
 /* ── Public API ── */
-void        control_init(void);
-void        control_update(void);            /* called from PID_INST_IRQHandler      */
-void        control_set_mode(control_mode_t m);
-control_mode_t control_get_mode(void);
+void control_init(void);
+void control_update(void);            /* called from PID_INST_IRQHandler      */
+
+/* ── Variant hooks (implemented by control_open.c OR control_closed.c) ── */
+void control_variant_init(void);
+void control_variant_reset(void);
+void control_straight_duty(void);
+void control_track_duty(int8_t error);
 
 #endif

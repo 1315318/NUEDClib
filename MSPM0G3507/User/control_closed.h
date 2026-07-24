@@ -1,0 +1,12 @@
+#ifndef CONTROL_CLOSED_H
+#define CONTROL_CLOSED_H
+
+#include <stdint.h>
+
+/* ── Closed‑loop constants (Q8.8 fixed‑point) ── */
+#define BASE_SPEED_Q8_8   25600    /* 100.0 mm/s × 256                       */
+#define SPEED_GAIN_Q8_8    7680    /*  30.0 × 256                            */
+#define KP_Q8_8            128     /*   0.5 × 256                            */
+#define KI_Q8_8            102     /*   0.4 × 256                            */
+
+#endif
